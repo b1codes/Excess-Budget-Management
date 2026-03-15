@@ -21,7 +21,7 @@ create policy "Users can update own profile"
   using ( auth.uid() = id );
 
 -- Trigger to automatically create a profile for new users
-create or function public.handle_new_user()
+create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, email)
@@ -36,7 +36,7 @@ create trigger on_auth_user_created
 
 -- Accounts table
 create table public.accounts (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default extensions.uuid_generate_v4() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   name text not null,
   balance numeric(12, 2) default 0.00 not null,
@@ -51,7 +51,7 @@ create policy "Users can delete own accounts" on public.accounts for delete usin
 
 -- Income Sources table (regular income)
 create table public.income_sources (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default extensions.uuid_generate_v4() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   name text not null,
   expected_amount numeric(12, 2) not null,
@@ -67,7 +67,7 @@ create policy "Users can delete own income sources" on public.income_sources for
 
 -- Extra Income table (one-off)
 create table public.extra_income (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default extensions.uuid_generate_v4() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   amount numeric(12, 2) not null,
   description text,
@@ -83,7 +83,7 @@ create policy "Users can delete own extra income" on public.extra_income for del
 
 -- Budget Categories table
 create table public.budget_categories (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default extensions.uuid_generate_v4() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   name text not null,
   limit_amount numeric(12, 2) not null,
@@ -99,7 +99,7 @@ create policy "Users can delete own budget categories" on public.budget_categori
 
 -- Goals table
 create table public.goals (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default extensions.uuid_generate_v4() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   name text not null,
   target_amount numeric(12, 2) not null,
