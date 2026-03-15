@@ -1,0 +1,7 @@
+{
+  "deno.enable": false,
+  "deno.unstable": true,
+  "deno.enablePaths": [
+    "backend/supabase/functions"
+  ]
+}
