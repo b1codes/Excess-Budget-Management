@@ -11,6 +11,9 @@ import 'features/accounts/bloc/account_bloc.dart';
 import 'features/accounts/repositories/account_repository.dart';
 import 'features/budget/bloc/budget_bloc.dart';
 import 'features/budget/repositories/budget_repository.dart';
+import 'features/goals/repositories/goal_repository.dart';
+import 'features/dashboard/repositories/suggestion_repository.dart';
+import 'features/dashboard/bloc/dashboard_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +43,13 @@ class BudgetApp extends StatelessWidget {
         ),
         BlocProvider<BudgetBloc>(
           create: (context) => BudgetBloc(repository: BudgetRepository(supabase: supabaseClient)),
+        ),
+        BlocProvider<DashboardBloc>(
+          create: (context) => DashboardBloc(
+            suggestionRepository: SuggestionRepository(supabase: supabaseClient),
+            accountRepository: AccountRepository(supabase: supabaseClient),
+            goalRepository: GoalRepository(supabase: supabaseClient),
+          ),
         ),
       ],
       child: MaterialApp.router(
