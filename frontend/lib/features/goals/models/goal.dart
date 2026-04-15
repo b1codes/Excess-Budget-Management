@@ -6,6 +6,7 @@ class Goal {
   final double currentAmount;
   final DateTime? targetDate;
   final String type;
+  final String category;
   final DateTime createdAt;
 
   Goal({
@@ -16,6 +17,7 @@ class Goal {
     required this.currentAmount,
     this.targetDate,
     required this.type,
+    required this.category,
     required this.createdAt,
   });
 
@@ -28,17 +30,20 @@ class Goal {
       currentAmount: (json['current_amount'] as num).toDouble(),
       targetDate: json['target_date'] != null ? DateTime.parse(json['target_date'] as String) : null,
       type: json['type'] as String,
+      category: json['category'] as String? ?? 'savings',
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
       'target_amount': targetAmount,
       'current_amount': currentAmount,
       'target_date': targetDate?.toIso8601String(),
       'type': type,
+      'category': category,
     };
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/budget_bloc.dart';
 import '../widgets/budget_category_form_sheet.dart';
+import '../../models/budget_category.dart';
 
 class BudgetCategoriesScreen extends StatefulWidget {
   const BudgetCategoriesScreen({super.key});
@@ -17,7 +18,7 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
     context.read<BudgetBloc>().add(LoadBudgets());
   }
 
-  void _showCategoryForm([budgetCategory]) {
+  void _showCategoryForm([BudgetCategory? budgetCategory]) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -95,7 +96,7 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
                           Text(
                             'Total Budget Allocation',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8),
+                              color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -113,7 +114,7 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
                               Text(
                                 ' / \$${totalBudget.toStringAsFixed(0)}',
                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.6),
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.6),
                                 ),
                               ),
                             ],
@@ -124,7 +125,7 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
                             child: LinearProgressIndicator(
                               value: overallPercent,
                               minHeight: 8,
-                              backgroundColor: Colors.white.withOpacity(0.3),
+                              backgroundColor: Colors.white.withValues(alpha: 0.3),
                               color: overallPercent > 0.9 ? Colors.redAccent : Theme.of(context).colorScheme.primary,
                             ),
                           ),

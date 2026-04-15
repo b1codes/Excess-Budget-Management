@@ -12,6 +12,8 @@ class SuggestionRepository {
     required double excessFunds,
     required List<Account> accounts,
     required List<Goal> goals,
+    required Map<String, double> recentAllocations,
+    required double defaultSavingsRatio,
   }) async {
     final response = await supabase.functions.invoke(
       'generate-suggestions',
@@ -19,6 +21,8 @@ class SuggestionRepository {
         'excessFunds': excessFunds,
         'accounts': accounts.map((a) => a.toJson()).toList(),
         'goals': goals.map((g) => g.toJson()).toList(),
+        'recentAllocations': recentAllocations,
+        'defaultSavingsRatio': defaultSavingsRatio,
       },
     );
 

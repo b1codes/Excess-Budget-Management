@@ -33,6 +33,14 @@ class AccountRepository {
     return Account.fromJson(response);
   }
 
+  Future<Account> updateAccountBalance(String id, double balance) async {
+    final response = await supabase.from('accounts').update({
+      'balance': balance,
+    }).eq('id', id).select().single();
+
+    return Account.fromJson(response);
+  }
+
   Future<void> deleteAccount(String id) async {
     await supabase.from('accounts').delete().eq('id', id);
   }

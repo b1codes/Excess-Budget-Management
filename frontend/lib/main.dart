@@ -14,6 +14,7 @@ import 'features/budget/repositories/budget_repository.dart';
 import 'features/goals/repositories/goal_repository.dart';
 import 'features/dashboard/repositories/suggestion_repository.dart';
 import 'features/dashboard/bloc/dashboard_bloc.dart';
+import 'features/auth/repositories/profile_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +50,7 @@ class BudgetApp extends StatelessWidget {
             suggestionRepository: SuggestionRepository(supabase: supabaseClient),
             accountRepository: AccountRepository(supabase: supabaseClient),
             goalRepository: GoalRepository(supabase: supabaseClient),
+            profileRepository: ProfileRepository(supabase: supabaseClient),
           ),
         ),
       ],

@@ -11,7 +11,13 @@ class GoalRepository {
     return (response as List).map((e) => Goal.fromJson(e)).toList();
   }
 
-  Future<Goal> addGoal(String name, double targetAmount, String type, {DateTime? targetDate}) async {
+  Future<Goal> addGoal(
+    String name,
+    double targetAmount,
+    String type, {
+    String category = 'savings',
+    DateTime? targetDate,
+  }) async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('User not logged in');
 
@@ -20,10 +26,35 @@ class GoalRepository {
       'name': name,
       'target_amount': targetAmount,
       'type': type,
+      'category': category,
       if (targetDate != null) 'target_date': targetDate.toIso8601String(),
     }).select().single();
 
     return Goal.fromJson(response);
+  }
+
+  Future<void> insertAllocation(String goalId, double amount) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('User not logged in');
+
+    await supabase.from('goal_allocations').insert({
+      'user_id': userId,
+      'goal_id': goalId,
+      'amount': amount,
+    });
+  }
+
+  Future<Map<String, double>> getRecentAllocationSummary(int days) async {
+    final response = await supabase.rpc(
+      'get_recent_allocation_summary',
+      params: {'days': days},
+    );
+
+    final data = response as Map<String, dynamic>;
+    return {
+      'totalSavings': (data['totalSavings'] as num).toDouble(),
+      'totalPurchases': (data['totalPurchases'] as num).toDouble(),
+    };
   }
 
   Future<Goal> updateGoalCurrentAmount(String id, double currentAmount) async {

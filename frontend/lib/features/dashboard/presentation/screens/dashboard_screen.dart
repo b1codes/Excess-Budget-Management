@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../accounts/presentation/screens/accounts_screen.dart';
 import '../../../budget/presentation/screens/budget_categories_screen.dart';
+import '../../../goals/presentation/screens/goal_list_screen.dart';
+import '../../../auth/presentation/screens/profile_screen.dart';
 import '../../bloc/dashboard_bloc.dart';
 import '../../bloc/dashboard_event.dart';
 import '../../bloc/dashboard_state.dart';
@@ -24,7 +26,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const _OverviewTab(),
     const AccountsScreen(),
     const BudgetCategoriesScreen(),
-    const Center(child: Text('Goals (WIP)')),
+    const GoalListScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -61,6 +64,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icon(Icons.flag_outlined),
             selectedIcon: Icon(Icons.flag),
             label: 'Goals',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
       ),
@@ -110,7 +118,7 @@ class _OverviewTabState extends State<_OverviewTab> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
+              Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
               Theme.of(context).colorScheme.surface,
             ],
           ),
@@ -199,12 +207,12 @@ class _OverviewTabState extends State<_OverviewTab> {
   Widget _buildInputCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withOpacity(0.6),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.1)),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -231,11 +239,11 @@ class _OverviewTabState extends State<_OverviewTab> {
                     labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -305,7 +313,7 @@ class _AllocationCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -319,7 +327,7 @@ class _AllocationCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(icon, color: color, size: 28),
@@ -355,7 +363,7 @@ class _AllocationCard extends StatelessWidget {
                     Text(
                       isGoal ? 'Savings Goal' : 'Account Deposit',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                             letterSpacing: 1.2,
                           ),
                     ),
@@ -365,6 +373,27 @@ class _AllocationCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             height: 1.5,
                           ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          context.read<DashboardBloc>().add(AcceptSuggestionRequested(allocation));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Accepted allocation for ${allocation.name}')),
+                          );
+                        },
+                        icon: const Icon(Icons.check_circle_outline, size: 18),
+                        label: const Text('Accept Suggestion'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: color,
+                          side: BorderSide(color: color.withValues(alpha: 0.5)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
