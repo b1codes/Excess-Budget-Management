@@ -8,7 +8,12 @@ import '../features/dashboard/presentation/screens/overview_tab.dart';
 import '../features/accounts/presentation/screens/accounts_screen.dart';
 import '../features/budget/presentation/screens/budget_categories_screen.dart';
 import '../features/goals/presentation/screens/goal_list_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../features/auth/presentation/screens/profile_screen.dart';
+import '../features/goals/presentation/screens/allocation_history_screen.dart';
+import '../features/goals/bloc/allocation_history_bloc.dart';
+import '../features/goals/bloc/allocation_history_event.dart';
+import '../features/goals/repositories/goal_repository.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -45,6 +50,17 @@ final goRouter = GoRouter(
             GoRoute(
               path: '/',
               builder: (context, state) => const OverviewTab(),
+              routes: [
+                GoRoute(
+                  path: 'history',
+                  builder: (context, state) => BlocProvider(
+                    create: (context) => AllocationHistoryBloc(
+                      goalRepository: GoalRepository(supabase: supabase),
+                    )..add(FetchAllocationHistory()),
+                    child: const AllocationHistoryScreen(),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
