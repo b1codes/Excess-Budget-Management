@@ -187,6 +187,11 @@ class _OverviewTabState extends State<OverviewTab> {
         return Scaffold(
           appBar:
               context.isCompact ? AppBar(title: const Text('Overview')) : null,
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () => context.go('/bulk-entry'),
+            icon: const Icon(Icons.library_add),
+            label: const Text('Bulk Entry'),
+          ),
           body: Stack(
             children: [
               RefreshIndicator(

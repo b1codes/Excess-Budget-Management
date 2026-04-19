@@ -11,6 +11,7 @@ import '../features/goals/presentation/screens/goal_list_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../features/auth/presentation/screens/profile_screen.dart';
 import '../features/goals/presentation/screens/allocation_history_screen.dart';
+import '../features/dashboard/presentation/screens/bulk_entry_screen.dart';
 import '../features/goals/bloc/allocation_history_bloc.dart';
 import '../features/goals/bloc/allocation_history_event.dart';
 import '../features/goals/repositories/goal_repository.dart';
@@ -59,6 +60,10 @@ final goRouter = GoRouter(
                     )..add(FetchAllocationHistory()),
                     child: const AllocationHistoryScreen(),
                   ),
+                ),
+                GoRoute(
+                  path: 'bulk-entry',
+                  builder: (context, state) => const BulkEntryScreen(),
                 ),
               ],
             ),
