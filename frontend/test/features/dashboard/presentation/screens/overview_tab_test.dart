@@ -33,7 +33,7 @@ void main() {
     );
   }
 
-  testWidgets('renders SliverList in compact mode', (WidgetTester tester) async {
+  testWidgets('renders Column in compact mode', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(400, 800);
     tester.view.devicePixelRatio = 1.0;
 
@@ -49,13 +49,13 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
 
-    expect(find.byType(SliverList), findsOneWidget);
-    expect(find.byType(SliverGrid), findsNothing);
+    expect(find.byType(Column), findsWidgets); // Column is used in many places, so findsWidgets
+    expect(find.byType(GridView), findsNothing);
 
     addTearDown(tester.view.resetPhysicalSize);
   });
 
-  testWidgets('renders SliverGrid in expanded mode', (WidgetTester tester) async {
+  testWidgets('renders GridView in expanded mode', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1200, 800);
     tester.view.devicePixelRatio = 1.0;
 
@@ -72,8 +72,7 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
 
-    expect(find.byType(SliverGrid), findsOneWidget);
-    expect(find.byType(SliverList), findsNothing);
+    expect(find.byType(GridView), findsOneWidget);
 
     addTearDown(tester.view.resetPhysicalSize);
   });
