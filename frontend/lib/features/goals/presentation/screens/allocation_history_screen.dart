@@ -29,7 +29,11 @@ class AllocationHistoryScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Error: ${state.message}',
@@ -51,8 +55,8 @@ class AllocationHistoryScreen extends StatelessWidget {
             );
           }
           if (state is AllocationHistoryLoaded) {
-            final history = state.allocations;
-            if (history.isEmpty) {
+            final items = state.items;
+            if (items.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -78,51 +82,82 @@ class AllocationHistoryScreen extends StatelessWidget {
               );
             }
 
-            // Simple list for now, we could group by month later if needed
-            return ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: history.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: items.length,
               itemBuilder: (context, index) {
-                final item = history[index];
-                return Card(
-                  elevation: 0,
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 8,
+                final listItem = items[index];
+
+                if (listItem is AllocationMonthHeader) {
+                  return Padding(
+                    padding: const EdgeInsets.only(
+                      top: 24.0,
+                      bottom: 8.0,
+                      left: 8.0,
                     ),
-                    leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      child: const Icon(Icons.add),
-                    ),
-                    title: Text(
-                      item.goalName ?? 'Unknown Goal',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(
-                      DateFormat('MMM d, yyyy • h:mm a').format(item.createdAt),
-                      style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                    ),
-                    trailing: Text(
-                      NumberFormat.currency(symbol: r'$').format(item.amount),
-                      style: TextStyle(
+                    child: Text(
+                      listItem.monthYear,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        fontSize: 18,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
-                  ),
-                );
+                  );
+                } else if (listItem is AllocationItem) {
+                  final item = listItem.allocation;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: Card(
+                      elevation: 0,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
+                        leading: CircleAvatar(
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
+                          child: const Icon(Icons.add),
+                        ),
+                        title: Text(
+                          item.goalName ?? 'Unknown Goal',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          DateFormat(
+                            'MMM d, yyyy • h:mm a',
+                          ).format(item.createdAt),
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
+                        trailing: Text(
+                          NumberFormat.currency(
+                            symbol: r'$',
+                          ).format(item.amount),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
               },
             );
           }
