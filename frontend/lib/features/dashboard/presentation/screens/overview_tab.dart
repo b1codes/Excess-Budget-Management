@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/breakpoints.dart';
 import '../../bloc/dashboard_bloc.dart';
 import '../../bloc/dashboard_event.dart';
 import '../../bloc/dashboard_state.dart';
@@ -149,14 +150,17 @@ class _OverviewTabState extends State<OverviewTab> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(
-          'Month-End Review',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      appBar:
+          context.isCompact
+              ? AppBar(
+                title: Text(
+                  'Month-End Review',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+                ),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+              )
+              : null,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(

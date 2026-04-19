@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/breakpoints.dart';
 import '../../models/goal.dart';
 import '../../repositories/goal_repository.dart';
 import '../widgets/goal_form_sheet.dart';
@@ -64,7 +65,10 @@ class _GoalListScreenState extends State<GoalListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Financial Goals')),
+      appBar:
+          context.isCompact
+              ? AppBar(title: const Text('Financial Goals'))
+              : null,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _goals.isEmpty

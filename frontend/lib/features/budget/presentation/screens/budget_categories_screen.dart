@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/breakpoints.dart';
 import '../../bloc/budget_bloc.dart';
 import '../widgets/budget_category_form_sheet.dart';
 import '../../models/budget_category.dart';
@@ -67,11 +68,14 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Budget Categories'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      appBar:
+          context.isCompact
+              ? AppBar(
+                title: const Text('Budget Categories'),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+              )
+              : null,
       body: BlocBuilder<BudgetBloc, BudgetState>(
         builder: (context, state) {
           if (state is BudgetLoading) {

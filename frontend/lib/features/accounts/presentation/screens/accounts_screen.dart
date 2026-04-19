@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/breakpoints.dart';
 import '../../bloc/account_bloc.dart';
 import '../../models/account.dart';
 
@@ -77,7 +78,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Accounts')),
+      appBar: context.isCompact ? AppBar(title: const Text('Accounts')) : null,
       body: BlocBuilder<AccountBloc, AccountState>(
         builder: (context, state) {
           if (state is AccountLoading) {
