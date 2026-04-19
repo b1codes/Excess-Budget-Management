@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/breakpoints.dart';
+import '../../../../core/widgets/master_detail_layout.dart';
 import '../../models/goal.dart';
 import '../../repositories/goal_repository.dart';
+import '../widgets/goal_detail_view.dart';
 import '../widgets/goal_form_sheet.dart';
 import 'goal_detail_screen.dart';
 
@@ -19,6 +21,7 @@ class _GoalListScreenState extends State<GoalListScreen> {
   );
   List<Goal> _goals = [];
   bool _isLoading = true;
+  Goal? _selectedGoal;
 
   @override
   void initState() {
@@ -26,13 +29,21 @@ class _GoalListScreenState extends State<GoalListScreen> {
     _loadGoals();
   }
 
-  Future<void> _loadGoals() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadGoals({bool silent = false}) async {
+    if (!silent) setState(() => _isLoading = true);
     try {
       final goals = await _goalRepository.getGoals();
       setState(() {
         _goals = goals;
         _isLoading = false;
+
+        // Sync selected goal if it exists
+        if (_selectedGoal != null) {
+          _selectedGoal = goals.firstWhere(
+            (g) => g.id == _selectedGoal!.id,
+            orElse: () => _selectedGoal!,
+          );
+        }
       });
     } catch (e) {
       if (!mounted) return;
@@ -69,73 +80,113 @@ class _GoalListScreenState extends State<GoalListScreen> {
           context.isCompact
               ? AppBar(title: const Text('Financial Goals'))
               : null,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _goals.isEmpty
-          ? const Center(child: Text('No goals yet. Add one to start saving!'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _goals.length,
-              itemBuilder: (context, index) {
-                final goal = _goals[index];
-                final progress = goal.targetAmount > 0
-                    ? goal.currentAmount / goal.targetAmount
-                    : 0.0;
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: ListTile(
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => GoalDetailScreen(goal: goal),
-                        ),
-                      );
-                      _loadGoals();
-                    },
-                    title: Text(
-                      goal.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        LinearProgressIndicator(
-                          value: progress.clamp(0.0, 1.0),
-                          backgroundColor: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '\$${goal.currentAmount.toStringAsFixed(2)} of \$${goal.targetAmount.toStringAsFixed(2)}',
-                            ),
-                            Text(
-                              goal.category.toUpperCase(),
-                              style: Theme.of(context).textTheme.labelSmall,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () async {
-                        await _goalRepository.deleteGoal(goal.id);
-                        _loadGoals();
-                      },
-                    ),
-                  ),
-                );
-              },
-            ),
+      body: MasterDetailLayout(
+        master: _buildMasterPane(),
+        detail: _selectedGoal != null
+            ? GoalDetailView(
+                key: ValueKey(_selectedGoal!.id),
+                goal: _selectedGoal!,
+                onUpdate: () => _loadGoals(silent: true),
+                onDelete: () {
+                  setState(() {
+                    _selectedGoal = null;
+                  });
+                  _loadGoals();
+                },
+              )
+            : null,
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddGoal,
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  Widget _buildMasterPane() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_goals.isEmpty) {
+      return const Center(
+        child: Text('No goals yet. Add one to start saving!'),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _goals.length,
+      itemBuilder: (context, index) {
+        final goal = _goals[index];
+        final isSelected = _selectedGoal?.id == goal.id;
+        final progress = goal.targetAmount > 0
+            ? goal.currentAmount / goal.targetAmount
+            : 0.0;
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          color: !context.isCompact && isSelected
+              ? Theme.of(context).colorScheme.primaryContainer
+              : null,
+          child: ListTile(
+            onTap: () async {
+              if (context.isCompact) {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GoalDetailScreen(goal: goal),
+                  ),
+                );
+                _loadGoals();
+              } else {
+                setState(() {
+                  _selectedGoal = goal;
+                });
+              }
+            },
+            title: Text(
+              goal.name,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: progress.clamp(0.0, 1.0),
+                  backgroundColor: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '\$${goal.currentAmount.toStringAsFixed(2)} of \$${goal.targetAmount.toStringAsFixed(2)}',
+                    ),
+                    Text(
+                      goal.category.toUpperCase(),
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            trailing: context.isCompact
+                ? IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () async {
+                      await _goalRepository.deleteGoal(goal.id);
+                      _loadGoals();
+                    },
+                  )
+                : null,
+          ),
+        );
+      },
     );
   }
 }
