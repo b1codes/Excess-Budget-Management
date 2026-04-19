@@ -73,6 +73,16 @@ class _AllocationCardState extends State<AllocationCard> {
         ? Colors.purpleAccent.shade400
         : Theme.of(context).colorScheme.primary;
 
+    Goal? targetGoal;
+    if (isGoal) {
+      try {
+        targetGoal = widget.goals.firstWhere((g) => g.id == widget.allocation.id);
+      } catch (_) {
+        targetGoal = null;
+      }
+    }
+    final isCompleted = targetGoal?.isCompleted ?? false;
+
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 400 + (widget.index * 150)),
       curve: Curves.easeOutQuart,
@@ -123,14 +133,28 @@ class _AllocationCardState extends State<AllocationCard> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                            child: Text(
-                              widget.allocation.name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    widget.allocation.name,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (isCompleted) ...[
+                                  const SizedBox(width: 8),
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green.shade600,
+                                    size: 16,
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                           Text(

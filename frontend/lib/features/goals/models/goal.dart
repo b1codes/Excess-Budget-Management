@@ -25,6 +25,8 @@ class Goal {
     this.subGoals = const [],
   });
 
+  bool get isCompleted => targetAmount > 0 && currentAmount >= targetAmount;
+
   factory Goal.fromJson(Map<String, dynamic> json) {
     return Goal(
       id: json['id'] as String,

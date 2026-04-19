@@ -17,6 +17,8 @@ class SubGoal {
     required this.createdAt,
   });
 
+  bool get isCompleted => targetAmount > 0 && currentAmount >= targetAmount;
+
   factory SubGoal.fromJson(Map<String, dynamic> json) {
     return SubGoal(
       id: json['id'] as String,

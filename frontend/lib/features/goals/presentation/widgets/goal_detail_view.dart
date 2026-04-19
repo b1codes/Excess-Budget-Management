@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:confetti/confetti.dart';
 import '../../models/goal.dart';
 import '../../models/sub_goal.dart';
 import '../../repositories/goal_repository.dart';
@@ -27,12 +28,22 @@ class _GoalDetailViewState extends State<GoalDetailView> {
   );
   late Goal _currentGoal;
   bool _isLoading = false;
+  late ConfettiController _confettiController;
 
   @override
   void initState() {
     super.initState();
     _currentGoal = widget.goal;
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 3),
+    );
     _refreshGoal();
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
   }
 
   @override
@@ -45,11 +56,16 @@ class _GoalDetailViewState extends State<GoalDetailView> {
   }
 
   Future<void> _refreshGoal() async {
+    final oldGoal = _currentGoal;
     setState(() => _isLoading = true);
     try {
       final goals = await _goalRepository.getGoals();
+      final updatedGoal = goals.firstWhere((g) => g.id == oldGoal.id);
+
+      _checkCompletion(oldGoal, updatedGoal);
+
       setState(() {
-        _currentGoal = goals.firstWhere((g) => g.id == _currentGoal.id);
+        _currentGoal = updatedGoal;
         _isLoading = false;
       });
       widget.onUpdate?.call();
@@ -59,6 +75,27 @@ class _GoalDetailViewState extends State<GoalDetailView> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error refreshing: $e')));
+      }
+    }
+  }
+
+  void _checkCompletion(Goal oldGoal, Goal newGoal) {
+    // Check parent goal completion transition
+    if (!oldGoal.isCompleted && newGoal.isCompleted) {
+      _confettiController.play();
+      return; // Already triggered for parent, no need to check subgoals
+    }
+
+    // Check if any subgoal transitioned to completed
+    for (final newSg in newGoal.subGoals) {
+      final oldSg = oldGoal.subGoals.cast<SubGoal?>().firstWhere(
+        (s) => s?.id == newSg.id,
+        orElse: () => null,
+      );
+
+      if (oldSg != null && !oldSg.isCompleted && newSg.isCompleted) {
+        _confettiController.play();
+        break;
       }
     }
   }
@@ -262,123 +299,160 @@ class _GoalDetailViewState extends State<GoalDetailView> {
 
   @override
   Widget build(BuildContext context) {
-    final progress = _currentGoal.targetAmount > 0
-        ? _currentGoal.currentAmount / _currentGoal.targetAmount
-        : 0.0;
+    final progress =
+        _currentGoal.targetAmount > 0
+            ? _currentGoal.currentAmount / _currentGoal.targetAmount
+            : 0.0;
 
-    return Column(
+    return Stack(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _currentGoal.name,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+        Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 8.0,
               ),
-              Row(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (_isLoading)
-                    const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else
-                    IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: _refreshGoal,
-                    ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Delete Goal'),
-                          content: Text(
-                            'Are you sure you want to delete "${_currentGoal.name}"?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                await _goalRepository.deleteGoal(_currentGoal.id);
-                                if (context.mounted) {
-                                  Navigator.pop(context);
-                                  widget.onDelete?.call();
-                                }
-                              },
-                              child: const Text(
-                                'Delete',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _refreshGoal,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildParentProgressCard(progress),
-                  const SizedBox(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Line Items (Subgoals)',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                  Flexible(
+                    child: Text(
+                      _currentGoal.name,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      if (_isLoading)
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      else
+                        IconButton(
+                          icon: const Icon(Icons.refresh),
+                          onPressed: _refreshGoal,
+                        ),
                       IconButton(
-                        onPressed: _showAddSubGoal,
-                        icon: const Icon(Icons.add_circle_outline),
-                        color: Theme.of(context).colorScheme.primary,
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                        ),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Goal'),
+                              content: Text(
+                                'Are you sure you want to delete "${_currentGoal.name}"?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    await _goalRepository.deleteGoal(
+                                      _currentGoal.id,
+                                    );
+                                    if (context.mounted) {
+                                      Navigator.pop(context);
+                                      widget.onDelete?.call();
+                                    }
+                                  },
+                                  child: const Text(
+                                    'Delete',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  if (_currentGoal.subGoals.isEmpty)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Text(
-                          'No subgoals yet. Breakdown your goal into line items!',
-                        ),
-                      ),
-                    )
-                  else
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _currentGoal.subGoals.length,
-                      itemBuilder: (context, index) {
-                        return _buildSubGoalItem(_currentGoal.subGoals[index]);
-                      },
-                    ),
                 ],
               ),
             ),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _refreshGoal,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildParentProgressCard(progress),
+                      const SizedBox(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Line Items (Subgoals)',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: _showAddSubGoal,
+                            icon: const Icon(Icons.add_circle_outline),
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (_currentGoal.subGoals.isEmpty)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: Text(
+                              'No subgoals yet. Breakdown your goal into line items!',
+                            ),
+                          ),
+                        )
+                      else
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _currentGoal.subGoals.length,
+                          itemBuilder: (context, index) {
+                            return _buildSubGoalItem(
+                              _currentGoal.subGoals[index],
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        Align(
+          alignment: Alignment.topCenter,
+          child: ConfettiWidget(
+            confettiController: _confettiController,
+            blastDirectionality: BlastDirectionality.explosive,
+            shouldLoop: false,
+            colors: const [
+              Colors.green,
+              Colors.blue,
+              Colors.pink,
+              Colors.orange,
+              Colors.purple,
+            ],
           ),
         ),
       ],
@@ -386,19 +460,25 @@ class _GoalDetailViewState extends State<GoalDetailView> {
   }
 
   Widget _buildParentProgressCard(double progress) {
+    final isCompleted = _currentGoal.isCompleted;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+            isCompleted
+                ? Colors.green.shade700
+                : Theme.of(context).colorScheme.primary,
+            isCompleted
+                ? Colors.green.shade500
+                : Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            color: (isCompleted ? Colors.green : Theme.of(context).colorScheme.primary).withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -407,13 +487,44 @@ class _GoalDetailViewState extends State<GoalDetailView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Overall Progress',
-            style: TextStyle(
-              color: Theme.of(
-                context,
-              ).colorScheme.onPrimary.withValues(alpha: 0.8),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Overall Progress',
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onPrimary.withValues(alpha: 0.8),
+                ),
+              ),
+              if (isCompleted)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.white, size: 16),
+                      SizedBox(width: 4),
+                      Text(
+                        'Completed',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           Row(
@@ -461,7 +572,7 @@ class _GoalDetailViewState extends State<GoalDetailView> {
               label: const Text('Fund Goal'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.onPrimary,
-                foregroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: isCompleted ? Colors.green.shade700 : Theme.of(context).colorScheme.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -477,6 +588,7 @@ class _GoalDetailViewState extends State<GoalDetailView> {
     final subProgress = subGoal.targetAmount > 0
         ? subGoal.currentAmount / subGoal.targetAmount
         : 0.0;
+    final isCompleted = subGoal.isCompleted;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -489,11 +601,28 @@ class _GoalDetailViewState extends State<GoalDetailView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  subGoal.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          subGoal.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isCompleted) ...[
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 16,
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 Row(
@@ -521,6 +650,10 @@ class _GoalDetailViewState extends State<GoalDetailView> {
               children: [
                 Text(
                   '\$${subGoal.currentAmount.toStringAsFixed(2)} of \$${subGoal.targetAmount.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: isCompleted ? Colors.green.shade700 : null,
+                    fontWeight: isCompleted ? FontWeight.bold : null,
+                  ),
                 ),
                 Text('${(subProgress * 100).toStringAsFixed(0)}%'),
               ],
@@ -529,6 +662,7 @@ class _GoalDetailViewState extends State<GoalDetailView> {
             LinearProgressIndicator(
               value: subProgress.clamp(0.0, 1.0),
               backgroundColor: Colors.grey[200],
+              color: isCompleted ? Colors.green : null,
               minHeight: 8,
               borderRadius: BorderRadius.circular(4),
             ),
