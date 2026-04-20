@@ -44,7 +44,6 @@ This project is a full-stack personal finance application designed to help users
     ```bash
     flutter build web
     ```
-
 ### Backend (Supabase)
 
 1.  **Start local environment**:
@@ -53,14 +52,24 @@ This project is a full-stack personal finance application designed to help users
     cd backend
     supabase start
     ```
-2.  **Reset local database** (applies migrations and seed data):
+2.  **Apply pending migrations**:
     ```bash
+    cd backend
+    supabase migration up
+    ```
+3.  **Reset local database** (applies all migrations and seed data):
+    ```bash
+    cd backend
     supabase db reset
     ```
-3.  **Serve functions locally**:
+4.  **Serve functions locally**:
     ```bash
+    cd backend
     supabase functions serve generate-suggestions
     ```
+
+> **Note**: When pulling changes that include new migration files in `backend/supabase/migrations/`, you must run `supabase migration up` to update your local database schema.
+
 
 ### Infrastructure (Terraform)
 
