@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:confetti/confetti.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/breakpoints.dart';
 import '../../bloc/dashboard_bloc.dart';
@@ -9,6 +10,7 @@ import '../../bloc/dashboard_event.dart';
 import '../../bloc/dashboard_state.dart';
 import '../../models/allocation.dart';
 import '../widgets/allocation_card.dart';
+import '../widgets/metric_card.dart';
 import '../widgets/sub_goal_distribution_sheet.dart';
 import '../../../goals/models/goal.dart';
 
@@ -181,8 +183,9 @@ class _OverviewTabState extends State<OverviewTab> {
         }
       },
       builder: (context, state) {
-        final List<Goal> goals =
-            state is DashboardSuggestionsLoaded ? state.goals : [];
+        final List<Goal> goals = state is DashboardSuggestionsLoaded
+            ? state.goals
+            : (state is DashboardDataLoaded ? state.goals : []);
 
         return Scaffold(
           appBar:
@@ -216,6 +219,10 @@ class _OverviewTabState extends State<OverviewTab> {
                         children: [
                           _buildHeader(context),
                           const SizedBox(height: 32),
+                          if (state is DashboardDataLoaded) ...[
+                            _buildMetrics(state),
+                            const SizedBox(height: 32),
+                          ],
                           _buildAnalysisInput(context, goals),
                           const SizedBox(height: 32),
                           if (state is DashboardLoading)
@@ -523,6 +530,71 @@ class _OverviewTabState extends State<OverviewTab> {
               ).colorScheme.onSurface.withValues(alpha: 0.4),
               height: 1.5,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetrics(DashboardDataLoaded state) {
+    final NumberFormat currency = NumberFormat.currency(symbol: r'$');
+
+    // Net Worth Calculation: Sum of account balances
+    final double netWorth = state.accounts.fold(
+      0,
+      (sum, a) => sum + a.balance,
+    );
+
+    // Budget Calculation: limit_amount vs spent_amount across all categories
+    final double totalBudgetLimit = state.budgetCategories.fold(
+      0,
+      (sum, c) => sum + c.limitAmount,
+    );
+    final double totalBudgetSpent = state.budgetCategories.fold(
+      0,
+      (sum, c) => sum + c.spentAmount,
+    );
+    final double budgetProgress =
+        totalBudgetLimit > 0
+            ? (totalBudgetSpent / totalBudgetLimit).clamp(0.0, 1.0)
+            : 0.0;
+
+    // Goal Progress Calculation: current_amount vs target_amount across all goals
+    final double totalGoalTarget = state.goals.fold(
+      0,
+      (sum, g) => sum + g.targetAmount,
+    );
+    final double totalGoalCurrent = state.goals.fold(
+      0,
+      (sum, g) => sum + g.currentAmount,
+    );
+    final double goalProgress =
+        totalGoalTarget > 0
+            ? (totalGoalCurrent / totalGoalTarget).clamp(0.0, 1.0)
+            : 0.0;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          MetricCard(
+            title: 'Net Worth',
+            value: currency.format(netWorth),
+            subtext: '${state.accounts.length} Accounts',
+          ),
+          const SizedBox(width: 16),
+          MetricCard(
+            title: 'Monthly Budget',
+            value: currency.format(totalBudgetSpent),
+            subtext: 'of ${currency.format(totalBudgetLimit)}',
+            progress: budgetProgress,
+          ),
+          const SizedBox(width: 16),
+          MetricCard(
+            title: 'Goal Progress',
+            value: currency.format(totalGoalCurrent),
+            subtext: 'of ${currency.format(totalGoalTarget)}',
+            progress: goalProgress,
           ),
         ],
       ),
