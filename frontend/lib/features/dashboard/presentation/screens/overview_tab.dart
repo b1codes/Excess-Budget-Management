@@ -183,9 +183,11 @@ class _OverviewTabState extends State<OverviewTab> {
         }
       },
       builder: (context, state) {
-        final List<Goal> goals = state is DashboardSuggestionsLoaded
-            ? state.goals
-            : (state is DashboardDataLoaded ? state.goals : []);
+        final List<Goal> goals = switch (state) {
+          DashboardSuggestionsLoaded s => s.goals,
+          DashboardDataLoaded d => d.goals,
+          _ => [],
+        };
 
         return Scaffold(
           appBar:
@@ -206,6 +208,10 @@ class _OverviewTabState extends State<OverviewTab> {
                     context.read<DashboardBloc>().add(
                       GenerateSuggestionsRequested(val),
                     );
+                  } else {
+                    context.read<DashboardBloc>().add(
+                      DashboardInitialDataRequested(),
+                    );
                   }
                 },
                 child: SingleChildScrollView(
@@ -219,15 +225,14 @@ class _OverviewTabState extends State<OverviewTab> {
                         children: [
                           _buildHeader(context),
                           const SizedBox(height: 32),
-                          if (state is DashboardDataLoaded) ...[
-                            _buildMetrics(state),
-                            const SizedBox(height: 32),
-                          ],
                           _buildAnalysisInput(context, goals),
                           const SizedBox(height: 32),
                           if (state is DashboardLoading)
                             const Center(child: CircularProgressIndicator())
-                          else if (state is DashboardSuggestionsLoaded)
+                          else if (state is DashboardDataLoaded) ...[
+                            _buildMetrics(context, state),
+                            const SizedBox(height: 32),
+                          ] else if (state is DashboardSuggestionsLoaded)
                             _buildSuggestionsList(context, state)
                           else if (state is DashboardError)
                             Center(
@@ -536,68 +541,97 @@ class _OverviewTabState extends State<OverviewTab> {
     );
   }
 
-  Widget _buildMetrics(DashboardDataLoaded state) {
-    final NumberFormat currency = NumberFormat.currency(symbol: r'$');
+  Widget _buildMetrics(BuildContext context, DashboardDataLoaded state) {
+    final netWorth = state.accounts.fold(0.0, (sum, a) => sum + a.balance);
 
-    // Net Worth Calculation: Sum of account balances
-    final double netWorth = state.accounts.fold(
-      0,
-      (sum, a) => sum + a.balance,
+    final totalSpent = state.budgetCategories.fold(
+      0.0,
+      (sum, b) => sum + b.spentAmount,
     );
+    final totalLimit = state.budgetCategories.fold(
+      0.0,
+      (sum, b) => sum + b.limitAmount,
+    );
+    final budgetProgress =
+        totalLimit > 0 ? (totalSpent / totalLimit).clamp(0.0, 1.0) : 0.0;
 
-    // Budget Calculation: limit_amount vs spent_amount across all categories
-    final double totalBudgetLimit = state.budgetCategories.fold(
-      0,
-      (sum, c) => sum + c.limitAmount,
-    );
-    final double totalBudgetSpent = state.budgetCategories.fold(
-      0,
-      (sum, c) => sum + c.spentAmount,
-    );
-    final double budgetProgress =
-        totalBudgetLimit > 0
-            ? (totalBudgetSpent / totalBudgetLimit).clamp(0.0, 1.0)
-            : 0.0;
+    final totalSaved = state.goals.fold(0.0, (sum, g) => sum + g.currentAmount);
+    final totalTarget = state.goals.fold(0.0, (sum, g) => sum + g.targetAmount);
+    final goalProgress =
+        totalTarget > 0 ? (totalSaved / totalTarget).clamp(0.0, 1.0) : 0.0;
 
-    // Goal Progress Calculation: current_amount vs target_amount across all goals
-    final double totalGoalTarget = state.goals.fold(
-      0,
-      (sum, g) => sum + g.targetAmount,
-    );
-    final double totalGoalCurrent = state.goals.fold(
-      0,
-      (sum, g) => sum + g.currentAmount,
-    );
-    final double goalProgress =
-        totalGoalTarget > 0
-            ? (totalGoalCurrent / totalGoalTarget).clamp(0.0, 1.0)
-            : 0.0;
+    final currencyFormat = NumberFormat.simpleCurrency(decimalDigits: 0);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          MetricCard(
-            title: 'Net Worth',
-            value: currency.format(netWorth),
-            subtext: '${state.accounts.length} Accounts',
-          ),
-          const SizedBox(width: 16),
-          MetricCard(
-            title: 'Monthly Budget',
-            value: currency.format(totalBudgetSpent),
-            subtext: 'of ${currency.format(totalBudgetLimit)}',
-            progress: budgetProgress,
-          ),
-          const SizedBox(width: 16),
-          MetricCard(
-            title: 'Goal Progress',
-            value: currency.format(totalGoalCurrent),
-            subtext: 'of ${currency.format(totalGoalTarget)}',
-            progress: goalProgress,
-          ),
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount =
+            constraints.maxWidth > 800
+                ? 3
+                : (constraints.maxWidth > 600 ? 2 : 1);
+
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 2.2,
+          children: [
+            MetricCard(
+              title: 'Net Worth',
+              value: currencyFormat.format(netWorth),
+              icon: Icons.account_balance_wallet_outlined,
+              color: Colors.blue,
+            ),
+            MetricCard(
+              title: 'Monthly Budget',
+              value:
+                  '${currencyFormat.format(totalSpent)} / ${currencyFormat.format(totalLimit)}',
+              icon: Icons.pie_chart_outline,
+              color: Colors.orange,
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: budgetProgress,
+                      minHeight: 6,
+                      backgroundColor: Colors.orange.withValues(alpha: 0.1),
+                      valueColor: const AlwaysStoppedAnimation(Colors.orange),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            MetricCard(
+              title: 'Goal Progress',
+              value: '${(goalProgress * 100).toStringAsFixed(0)}%',
+              icon: Icons.flag_outlined,
+              color: Colors.green,
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: goalProgress,
+                      minHeight: 6,
+                      backgroundColor: Colors.green.withValues(alpha: 0.1),
+                      valueColor: const AlwaysStoppedAnimation(Colors.green),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${currencyFormat.format(totalSaved)} of ${currencyFormat.format(totalTarget)}',
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

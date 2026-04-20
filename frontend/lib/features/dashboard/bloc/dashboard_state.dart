@@ -1,8 +1,8 @@
-import '../models/allocation.dart';
-import '../../goals/models/goal.dart';
-import '../../goals/models/allocation.dart';
 import '../../accounts/models/account.dart';
 import '../../budget/models/budget_category.dart';
+import '../../goals/models/allocation.dart';
+import '../../goals/models/goal.dart';
+import '../models/allocation.dart';
 
 abstract class DashboardState {}
 

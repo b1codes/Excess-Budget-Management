@@ -36,6 +36,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     Emitter<DashboardState> emit,
   ) async {
     emit(DashboardLoading());
+
     try {
       final results = await Future.wait([
         accountRepository.getAccounts(),
@@ -44,12 +45,14 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         goalRepository.getAllocations(),
       ]);
 
-      emit(DashboardDataLoaded(
-        accounts: results[0] as List<Account>,
-        budgetCategories: results[1] as List<BudgetCategory>,
-        goals: results[2] as List<Goal>,
-        recentAllocations: results[3] as List<GoalAllocation>,
-      ));
+      emit(
+        DashboardDataLoaded(
+          accounts: results[0] as List<Account>,
+          budgetCategories: results[1] as List<BudgetCategory>,
+          goals: results[2] as List<Goal>,
+          recentAllocations: results[3] as List<GoalAllocation>,
+        ),
+      );
     } catch (e) {
       emit(DashboardError(e.toString()));
     }

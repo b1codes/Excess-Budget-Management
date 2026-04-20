@@ -3,50 +3,63 @@ import 'package:flutter/material.dart';
 class MetricCard extends StatelessWidget {
   final String title;
   final String value;
-  final String? subtext;
-  final double? progress;
+  final IconData icon;
+  final Widget? subtitle;
+  final Color? color;
 
   const MetricCard({
     super.key,
     required this.title,
     required this.value,
-    this.subtext,
-    this.progress,
+    required this.icon,
+    this.subtitle,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card.filled(
-      child: Container(
-        width: 200, // Fixed width for horizontal scrolling consistency
-        padding: const EdgeInsets.all(16.0),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (color ?? Theme.of(context).colorScheme.primary)
+                        .withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 20,
+                    color: color ?? Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
             Text(
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
             ),
-            if (progress != null) ...[
+            if (subtitle != null) ...[
               const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: progress,
-                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ],
-            if (subtext != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                subtext!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
+              subtitle!,
             ],
           ],
         ),
