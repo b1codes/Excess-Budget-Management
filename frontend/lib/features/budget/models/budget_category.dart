@@ -4,6 +4,8 @@ class BudgetCategory {
   final String name;
   final double limitAmount;
   final double spentAmount;
+  final int? iconCode;
+  final String? colorHex;
   final DateTime createdAt;
 
   BudgetCategory({
@@ -12,6 +14,8 @@ class BudgetCategory {
     required this.name,
     required this.limitAmount,
     required this.spentAmount,
+    this.iconCode,
+    this.colorHex,
     required this.createdAt,
   });
 
@@ -22,6 +26,8 @@ class BudgetCategory {
       name: json['name'] as String,
       limitAmount: (json['limit_amount'] as num).toDouble(),
       spentAmount: (json['spent_amount'] as num).toDouble(),
+      iconCode: json['icon_code'] as int?,
+      colorHex: json['color_hex'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -31,6 +37,8 @@ class BudgetCategory {
       'name': name,
       'limit_amount': limitAmount,
       'spent_amount': spentAmount,
+      'icon_code': iconCode,
+      'color_hex': colorHex,
     };
   }
 }

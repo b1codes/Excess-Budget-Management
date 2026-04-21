@@ -4,7 +4,6 @@ import '../../models/budget_category.dart';
 class BudgetCategoryCard extends StatefulWidget {
   final BudgetCategory category;
   final double percent;
-  final IconData icon;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
@@ -12,7 +11,6 @@ class BudgetCategoryCard extends StatefulWidget {
     super.key,
     required this.category,
     required this.percent,
-    required this.icon,
     required this.onTap,
     required this.onDelete,
   });
@@ -24,8 +22,22 @@ class BudgetCategoryCard extends StatefulWidget {
 class _BudgetCategoryCardState extends State<BudgetCategoryCard> {
   bool _isHovered = false;
 
+  Color _parseColor(String? hex) {
+    if (hex == null) return Colors.grey;
+    try {
+      return Color(int.parse(hex.replaceFirst('#', '0xFF')));
+    } catch (e) {
+      return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final categoryColor = _parseColor(widget.category.colorHex);
+    final categoryIcon = widget.category.iconCode != null
+        ? IconData(widget.category.iconCode!, fontFamily: 'MaterialIcons')
+        : Icons.category;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -52,17 +64,14 @@ class _BudgetCategoryCardState extends State<BudgetCategoryCard> {
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(
               color: _isHovered
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
+                  ? categoryColor.withValues(alpha: 0.5)
                   : Colors.transparent,
             ),
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: widget.onTap,
-            hoverColor: Theme.of(context)
-                .colorScheme
-                .primaryContainer
-                .withValues(alpha: 0.1),
+            hoverColor: categoryColor.withValues(alpha: 0.05),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -72,16 +81,12 @@ class _BudgetCategoryCardState extends State<BudgetCategoryCard> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
+                          color: categoryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
-                          widget.icon,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
+                          categoryIcon,
+                          color: categoryColor,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -129,7 +134,7 @@ class _BudgetCategoryCardState extends State<BudgetCategoryCard> {
                           Theme.of(context).colorScheme.surfaceContainerHighest,
                       color: widget.percent >= 1.0
                           ? Theme.of(context).colorScheme.error
-                          : Theme.of(context).colorScheme.primary,
+                          : categoryColor,
                     ),
                   ),
                 ],

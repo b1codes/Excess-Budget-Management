@@ -34,37 +34,6 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
     );
   }
 
-  // Helper for dynamic icons based on name
-  IconData _getIconForCategory(String name) {
-    final lowerName = name.toLowerCase();
-    if (lowerName.contains('food') ||
-        lowerName.contains('grocer') ||
-        lowerName.contains('din')) {
-      return Icons.restaurant;
-    }
-    if (lowerName.contains('rent') ||
-        lowerName.contains('hous') ||
-        lowerName.contains('mortgage')) {
-      return Icons.home;
-    }
-    if (lowerName.contains('transport') ||
-        lowerName.contains('gas') ||
-        lowerName.contains('car')) {
-      return Icons.directions_car;
-    }
-    if (lowerName.contains('util')) return Icons.bolt;
-    if (lowerName.contains('entert') || lowerName.contains('fun')) {
-      return Icons.movie;
-    }
-    if (lowerName.contains('health') || lowerName.contains('medic')) {
-      return Icons.medical_services;
-    }
-    if (lowerName.contains('shop') || lowerName.contains('cloth')) {
-      return Icons.shopping_bag;
-    }
-    return Icons.category;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -219,7 +188,6 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
                         return BudgetCategoryCard(
                           category: category,
                           percent: percent,
-                          icon: _getIconForCategory(category.name),
                           onTap: () => _showCategoryForm(category),
                           onDelete: () {
                             context.read<BudgetBloc>().add(

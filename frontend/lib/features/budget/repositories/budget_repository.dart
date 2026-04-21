@@ -16,14 +16,22 @@ class BudgetRepository {
 
   Future<BudgetCategory> addBudgetCategory(
     String name,
-    double limitAmount,
-  ) async {
+    double limitAmount, {
+    int? iconCode,
+    String? colorHex,
+  }) async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('User not logged in');
 
     final response = await supabase
         .from('budget_categories')
-        .insert({'user_id': userId, 'name': name, 'limit_amount': limitAmount})
+        .insert({
+          'user_id': userId,
+          'name': name,
+          'limit_amount': limitAmount,
+          'icon_code': iconCode,
+          'color_hex': colorHex,
+        })
         .select()
         .single();
 
@@ -33,11 +41,18 @@ class BudgetRepository {
   Future<BudgetCategory> updateBudgetCategory(
     String id,
     String name,
-    double limitAmount,
-  ) async {
+    double limitAmount, {
+    int? iconCode,
+    String? colorHex,
+  }) async {
     final response = await supabase
         .from('budget_categories')
-        .update({'name': name, 'limit_amount': limitAmount})
+        .update({
+          'name': name,
+          'limit_amount': limitAmount,
+          'icon_code': iconCode,
+          'color_hex': colorHex,
+        })
         .eq('id', id)
         .select()
         .single();

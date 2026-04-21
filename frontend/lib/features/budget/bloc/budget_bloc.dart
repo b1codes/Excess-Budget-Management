@@ -40,18 +40,33 @@ class LoadBudgets extends BudgetEvent {}
 class AddBudgetCategory extends BudgetEvent {
   final String name;
   final double limitAmount;
-  const AddBudgetCategory(this.name, this.limitAmount);
+  final int? iconCode;
+  final String? colorHex;
+  const AddBudgetCategory(
+    this.name,
+    this.limitAmount, {
+    this.iconCode,
+    this.colorHex,
+  });
   @override
-  List<Object?> get props => [name, limitAmount];
+  List<Object?> get props => [name, limitAmount, iconCode, colorHex];
 }
 
 class UpdateBudgetCategory extends BudgetEvent {
   final String id;
   final String name;
   final double limitAmount;
-  const UpdateBudgetCategory(this.id, this.name, this.limitAmount);
+  final int? iconCode;
+  final String? colorHex;
+  const UpdateBudgetCategory(
+    this.id,
+    this.name,
+    this.limitAmount, {
+    this.iconCode,
+    this.colorHex,
+  });
   @override
-  List<Object?> get props => [id, name, limitAmount];
+  List<Object?> get props => [id, name, limitAmount, iconCode, colorHex];
 }
 
 class DeleteBudgetCategory extends BudgetEvent {
@@ -78,7 +93,12 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
 
     on<AddBudgetCategory>((event, emit) async {
       try {
-        await repository.addBudgetCategory(event.name, event.limitAmount);
+        await repository.addBudgetCategory(
+          event.name,
+          event.limitAmount,
+          iconCode: event.iconCode,
+          colorHex: event.colorHex,
+        );
         add(LoadBudgets());
       } catch (e) {
         emit(BudgetError(e.toString()));
@@ -91,6 +111,8 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
           event.id,
           event.name,
           event.limitAmount,
+          iconCode: event.iconCode,
+          colorHex: event.colorHex,
         );
         add(LoadBudgets());
       } catch (e) {
