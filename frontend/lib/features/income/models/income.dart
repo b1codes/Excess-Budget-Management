@@ -1,30 +1,28 @@
 import 'package:json_annotation/json_annotation.dart';
 
-part 'expense.g.dart';
+part 'income.g.dart';
 
 @JsonSerializable(fieldRename: FieldRename.snake)
-class Expense {
+class Income {
   final String id;
   final String userId;
-  final String budgetCategoryId;
   final double amount;
   final String? description;
-  final DateTime date;
+  final DateTime dateReceived;
   final DateTime createdAt;
   final String? accountId;
 
-  Expense({
+  Income({
     required this.id,
     required this.userId,
-    required this.budgetCategoryId,
     required this.amount,
     this.description,
-    required this.date,
+    required this.dateReceived,
     required this.createdAt,
     this.accountId,
   });
 
-  factory Expense.fromJson(Map<String, dynamic> json) =>
-      _$ExpenseFromJson(json);
-  Map<String, dynamic> toJson() => _$ExpenseToJson(this);
+  factory Income.fromJson(Map<String, dynamic> json) =>
+      _$IncomeFromJson(json);
+  Map<String, dynamic> toJson() => _$IncomeToJson(this);
 }

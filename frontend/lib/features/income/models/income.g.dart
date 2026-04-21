@@ -1,29 +1,27 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'expense.dart';
+part of 'income.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-Expense _$ExpenseFromJson(Map<String, dynamic> json) => Expense(
+Income _$IncomeFromJson(Map<String, dynamic> json) => Income(
   id: json['id'] as String,
   userId: json['user_id'] as String,
-  budgetCategoryId: json['budget_category_id'] as String,
   amount: (json['amount'] as num).toDouble(),
   description: json['description'] as String?,
-  date: DateTime.parse(json['date'] as String),
+  dateReceived: DateTime.parse(json['date_received'] as String),
   createdAt: DateTime.parse(json['created_at'] as String),
   accountId: json['account_id'] as String?,
 );
 
-Map<String, dynamic> _$ExpenseToJson(Expense instance) => <String, dynamic>{
+Map<String, dynamic> _$IncomeToJson(Income instance) => <String, dynamic>{
   'id': instance.id,
   'user_id': instance.userId,
-  'budget_category_id': instance.budgetCategoryId,
   'amount': instance.amount,
   'description': instance.description,
-  'date': instance.date.toIso8601String(),
+  'date_received': instance.dateReceived.toIso8601String(),
   'created_at': instance.createdAt.toIso8601String(),
   'account_id': instance.accountId,
 };

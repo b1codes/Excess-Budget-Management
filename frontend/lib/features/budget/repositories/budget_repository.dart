@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/budget_category.dart';
+import '../models/expense.dart';
 
 class BudgetRepository {
   final SupabaseClient supabase;
@@ -12,6 +13,19 @@ class BudgetRepository {
         .select()
         .order('created_at', ascending: true);
     return (response as List).map((e) => BudgetCategory.fromJson(e)).toList();
+  }
+
+  Future<List<Expense>> getExpenses() async {
+    final response = await supabase
+        .from('expenses')
+        .select()
+        .order('date', ascending: false)
+        .order('created_at', ascending: false);
+    return (response as List).map((e) => Expense.fromJson(e)).toList();
+  }
+
+  Future<void> deleteExpense(String id) async {
+    await supabase.from('expenses').delete().eq('id', id);
   }
 
   Future<BudgetCategory> addBudgetCategory(
