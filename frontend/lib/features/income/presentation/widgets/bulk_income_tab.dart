@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../bloc/bulk_income_bloc.dart';
 import '../../../accounts/bloc/account_bloc.dart';
 import '../../../accounts/models/account.dart';
+import '../../../budget/bloc/budget_bloc.dart';
+import '../../../budget/models/budget_category.dart';
 
 class BulkIncomeTab extends StatelessWidget {
   const BulkIncomeTab({super.key});
@@ -106,11 +108,12 @@ class BulkIncomeTab extends StatelessWidget {
                           BlocBuilder<AccountBloc, AccountState>(
                             builder: (context, accountState) {
                               List<Account> accounts = [];
-                              if (accountState is AccountLoaded)
+                              if (accountState is AccountLoaded) {
                                 accounts = accountState.accounts;
+                              }
 
                               return DropdownButtonFormField<String>(
-                                value: row.accountId,
+                                initialValue: row.accountId,
                                 decoration: const InputDecoration(
                                   labelText: 'Account (Optional)',
                                   prefixIcon: Icon(
@@ -136,6 +139,43 @@ class BulkIncomeTab extends StatelessWidget {
                                       UpdateIncomeRow(
                                         rowId: row.id,
                                         accountId: val,
+                                      ),
+                                    ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          BlocBuilder<BudgetBloc, BudgetState>(
+                            builder: (context, budgetState) {
+                              List<BudgetCategory> categories = [];
+                              if (budgetState is BudgetLoaded) {
+                                categories = budgetState.categories;
+                              }
+
+                              return DropdownButtonFormField<String>(
+                                initialValue: row.categoryId,
+                                decoration: const InputDecoration(
+                                  labelText: 'Budget Category (Optional)',
+                                  prefixIcon: Icon(Icons.category_outlined),
+                                  helperText: 'Categorize this income',
+                                ),
+                                items: [
+                                  const DropdownMenuItem<String>(
+                                    value: null,
+                                    child: Text('No Category'),
+                                  ),
+                                  ...categories.map(
+                                    (c) => DropdownMenuItem(
+                                      value: c.id,
+                                      child: Text(c.name),
+                                    ),
+                                  ),
+                                ],
+                                onChanged: (val) =>
+                                    context.read<BulkIncomeBloc>().add(
+                                      UpdateIncomeRow(
+                                        rowId: row.id,
+                                        categoryId: val,
                                       ),
                                     ),
                               );
