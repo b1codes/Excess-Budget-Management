@@ -96,31 +96,37 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
                                 ),
                           ),
                           const SizedBox(height: 8),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                '\$${totalSpent.toStringAsFixed(0)}',
-                                style: Theme.of(context).textTheme.displayMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onPrimaryContainer,
-                                    ),
-                              ),
-                              Text(
-                                ' / \$${totalBudget.toStringAsFixed(0)}',
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimaryContainer
-                                          .withValues(alpha: 0.6),
-                                    ),
-                              ),
-                            ],
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  '\$${totalSpent.toStringAsFixed(0)}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .displayMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onPrimaryContainer,
+                                      ),
+                                ),
+                                Text(
+                                  ' / \$${totalBudget.toStringAsFixed(0)}',
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimaryContainer
+                                            .withValues(alpha: 0.6),
+                                      ),
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 16),
                           ClipRRect(
@@ -176,26 +182,65 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
                 else
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final category = state.categories[index];
-                        final percent = category.limitAmount > 0
-                            ? (category.spentAmount / category.limitAmount)
-                                  .clamp(0.0, 1.0)
-                            : 0.0;
+                    sliver: context.isCompact
+                        ? SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final category = state.categories[index];
+                              final percent = category.limitAmount > 0
+                                  ? (category.spentAmount /
+                                            category.limitAmount)
+                                        .clamp(0.0, 1.0)
+                                  : 0.0;
 
-                        return BudgetCategoryCard(
-                          category: category,
-                          percent: percent,
-                          onTap: () => _showCategoryForm(category),
-                          onDelete: () {
-                            context.read<BudgetBloc>().add(
-                              DeleteBudgetCategory(category.id),
-                            );
-                          },
-                        );
-                      }, childCount: state.categories.length),
-                    ),
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: BudgetCategoryCard(
+                                  category: category,
+                                  percent: percent,
+                                  onTap: () => _showCategoryForm(category),
+                                  onDelete: () {
+                                    context.read<BudgetBloc>().add(
+                                      DeleteBudgetCategory(category.id),
+                                    );
+                                  },
+                                ),
+                              );
+                            }, childCount: state.categories.length),
+                          )
+                        : SliverGrid(
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: context.isMedium ? 2 : 3,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  mainAxisExtent: 140,
+                                ),
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final category = state.categories[index];
+                              final percent = category.limitAmount > 0
+                                  ? (category.spentAmount /
+                                            category.limitAmount)
+                                        .clamp(0.0, 1.0)
+                                  : 0.0;
+
+                              return BudgetCategoryCard(
+                                category: category,
+                                percent: percent,
+                                onTap: () => _showCategoryForm(category),
+                                onDelete: () {
+                                  context.read<BudgetBloc>().add(
+                                    DeleteBudgetCategory(category.id),
+                                  );
+                                },
+                              );
+                            }, childCount: state.categories.length),
+                          ),
                   ),
 
                 // Bottom padding for FAB
