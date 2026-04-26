@@ -1,6 +1,7 @@
+import 'package:equatable/equatable.dart';
 import 'sub_goal.dart';
 
-class Goal {
+class Goal extends Equatable {
   final String id;
   final String userId;
   final String name;
@@ -11,10 +12,9 @@ class Goal {
   final String category;
   final DateTime createdAt;
   final List<SubGoal> subGoals;
+  final List<String> accountIds;
 
-  final String? accountId;
-
-  Goal({
+  const Goal({
     required this.id,
     required this.userId,
     required this.name,
@@ -25,21 +25,45 @@ class Goal {
     required this.category,
     required this.createdAt,
     this.subGoals = const [],
-    this.accountId,
+    this.accountIds = const [],
   });
 
   bool get isCompleted => targetAmount > 0 && currentAmount >= targetAmount;
 
+  @override
+  List<Object?> get props => [
+        id,
+        userId,
+        name,
+        targetAmount,
+        currentAmount,
+        targetDate,
+        type,
+        category,
+        createdAt,
+        subGoals,
+        accountIds,
+      ];
+
   factory Goal.fromJson(Map<String, dynamic> json) {
+    List<String> parsedAccountIds = [];
+    if (json['goal_accounts'] != null) {
+      parsedAccountIds =
+          (json['goal_accounts'] as List)
+              .map((e) => e['account_id'] as String)
+              .toList();
+    }
+
     return Goal(
       id: json['id'] as String,
       userId: json['user_id'] as String,
       name: json['name'] as String,
       targetAmount: (json['target_amount'] as num).toDouble(),
       currentAmount: (json['current_amount'] as num).toDouble(),
-      targetDate: json['target_date'] != null
-          ? DateTime.parse(json['target_date'] as String)
-          : null,
+      targetDate:
+          json['target_date'] != null
+              ? DateTime.parse(json['target_date'] as String)
+              : null,
       type: json['type'] as String,
       category: json['category'] as String? ?? 'savings',
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -48,7 +72,7 @@ class Goal {
               ?.map((e) => SubGoal.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      accountId: json['account_id'] as String?,
+      accountIds: parsedAccountIds,
     );
   }
 
@@ -62,7 +86,7 @@ class Goal {
       'type': type,
       'category': category,
       'sub_goals': subGoals.map((e) => e.toJson()).toList(),
-      'account_id': accountId,
+      // accountIds are handled separately in junction table
     };
   }
 }

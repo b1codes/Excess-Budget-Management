@@ -10,7 +10,7 @@ class GoalRepository {
   Future<List<Goal>> getGoals() async {
     final response = await supabase
         .from('goals')
-        .select('*, sub_goals(*)')
+        .select('*, sub_goals(*), goal_accounts(account_id)')
         .order('created_at', ascending: true);
     return (response as List).map((e) => Goal.fromJson(e)).toList();
   }
@@ -51,7 +51,7 @@ class GoalRepository {
     String type, {
     String category = 'savings',
     DateTime? targetDate,
-    String? accountId,
+    List<String> accountIds = const [],
   }) async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('User not logged in');
@@ -65,12 +65,50 @@ class GoalRepository {
           'type': type,
           'category': category,
           'target_date': targetDate?.toIso8601String(),
-          'account_id': accountId,
         })
         .select()
         .single();
 
-    return Goal.fromJson(response);
+    final goal = Goal.fromJson(response);
+
+    if (accountIds.isNotEmpty) {
+      final links =
+          accountIds
+              .map(
+                (id) => {
+                  'goal_id': goal.id,
+                  'account_id': id,
+                  'user_id': userId,
+                },
+              )
+              .toList();
+      await supabase.from('goal_accounts').insert(links);
+    }
+
+    return goal;
+  }
+
+  Future<void> updateGoalAccounts(String goalId, List<String> accountIds) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('User not logged in');
+
+    // 1. Delete existing links
+    await supabase.from('goal_accounts').delete().eq('goal_id', goalId);
+
+    // 2. Insert new links
+    if (accountIds.isNotEmpty) {
+      final links =
+          accountIds
+              .map(
+                (id) => {
+                  'goal_id': goalId,
+                  'account_id': id,
+                  'user_id': userId,
+                },
+              )
+              .toList();
+      await supabase.from('goal_accounts').insert(links);
+    }
   }
 
   Future<void> insertAllocation(
