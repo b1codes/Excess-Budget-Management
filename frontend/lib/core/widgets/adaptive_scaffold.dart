@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../breakpoints.dart';
 
 class AdaptiveScaffold extends StatefulWidget {
-  final StatefulNavigationShell navigationShell;
+  final Widget navigationShell;
+  final int currentIndex;
   final List<NavigationDestination> destinations;
+  final ValueChanged<int> onDestinationSelected;
 
   const AdaptiveScaffold({
     super.key,
     required this.navigationShell,
+    required this.currentIndex,
     required this.destinations,
+    required this.onDestinationSelected,
   });
 
   @override
@@ -39,16 +42,15 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
   @override
   Widget build(BuildContext context) {
     final screenType = context.screenType;
-    final title = _getTitle(widget.navigationShell.currentIndex);
+    final title = _getTitle(widget.currentIndex);
 
     if (screenType == ScreenType.compact) {
       return Scaffold(
         appBar: AppBar(title: Text(title)),
         body: widget.navigationShell,
         bottomNavigationBar: NavigationBar(
-          selectedIndex: widget.navigationShell.currentIndex,
-          onDestinationSelected: (index) =>
-              widget.navigationShell.goBranch(index),
+          selectedIndex: widget.currentIndex,
+          onDestinationSelected: widget.onDestinationSelected,
           destinations: widget.destinations,
         ),
       );
@@ -63,32 +65,47 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                 ? NavigationRailLabelType.none
                 : NavigationRailLabelType.none,
             minExtendedWidth: 200,
-            selectedIndex: widget.navigationShell.currentIndex,
-            onDestinationSelected: (index) =>
-                widget.navigationShell.goBranch(index),
-            leading: Column(
-              children: [
-                const SizedBox(height: 8),
-                IconButton(
-                  icon: Icon(_isExtended ? Icons.menu_open : Icons.menu),
-                  onPressed: () => setState(() => _isExtended = !_isExtended),
-                ),
-                if (_isExtended) ...[
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'EXCESS BUDGET',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
+            selectedIndex: widget.currentIndex,
+            onDestinationSelected: widget.onDestinationSelected,
+            leading: _isExtended
+                ? SizedBox(
+                    width: 200,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.menu_open),
+                            onPressed: () =>
+                                setState(() => _isExtended = false),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'EXCESS BUDGET',
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.2,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: () => setState(() => _isExtended = true),
+                    ),
                   ),
-                ],
-              ],
-            ),
             destinations: widget.destinations
                 .map(
                   (dest) => NavigationRailDestination(

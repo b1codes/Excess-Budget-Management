@@ -39,6 +39,8 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       navigationShell: navigationShell,
+      currentIndex: navigationShell.currentIndex,
+      onDestinationSelected: (index) => navigationShell.goBranch(index),
       destinations: _destinations,
     );
   }
