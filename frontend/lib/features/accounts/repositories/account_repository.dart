@@ -14,6 +14,14 @@ class AccountRepository {
     return (response as List).map((e) => Account.fromJson(e)).toList();
   }
 
+  Stream<List<Account>> getAccountsStream() {
+    return supabase
+        .from('accounts')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: true)
+        .map((data) => data.map((e) => Account.fromJson(e)).toList());
+  }
+
   Future<Account> addAccount(String name, double balance) async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('User not logged in');

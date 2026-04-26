@@ -15,6 +15,14 @@ class BudgetRepository {
     return (response as List).map((e) => BudgetCategory.fromJson(e)).toList();
   }
 
+  Stream<List<BudgetCategory>> getBudgetCategoriesStream() {
+    return supabase
+        .from('budget_categories')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: true)
+        .map((data) => data.map((e) => BudgetCategory.fromJson(e)).toList());
+  }
+
   Future<List<Expense>> getExpenses() async {
     final response = await supabase
         .from('expenses')
