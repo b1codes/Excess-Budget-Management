@@ -127,6 +127,7 @@ frontend/android/app/release
 # Supabase (Backend)
 backend/supabase/.branches
 backend/supabase/.temp
+backend/supabase/.env
 
 # dotenvx
 .env.keys
