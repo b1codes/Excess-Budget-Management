@@ -1,0 +1,8 @@
+targets:
+  $default:
+    builders:
+      # The generator's telemetry reports a hash of `git config user.email`,
+      # the repo's root commit SHA and its remote URL to Widgetbook. Keep it
+      # off for this proprietary codebase.
+      widgetbook_generator:telemetry:
+        enabled: false
