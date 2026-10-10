@@ -3,5 +3,6 @@
   "deno.unstable": true,
   "deno.enablePaths": [
     "backend/supabase/functions"
-  ]
+  ],
+  "cmake.ignoreCMakeListsMissing": true
 }
