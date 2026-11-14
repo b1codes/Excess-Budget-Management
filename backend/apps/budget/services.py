@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from apps.common.firestore import get_client
 from apps.common.firestore_helpers import get_owned_or_404_fs
-from apps.common.money import to_cents, from_cents
+from apps.common.money import to_cents, from_cents, normalize
 from apps.common.rollups import apply_expense_effects
 from .models import BudgetCategory
 
@@ -55,7 +55,7 @@ def create_category(user, payload) -> BudgetCategory:
         id=category_id,
         user_id=str(user.id),
         name=payload.name,
-        limit_amount=payload.limit_amount,
+        limit_amount=normalize(payload.limit_amount),
         spent_amount=Decimal("0.00"),
         icon_code=payload.icon_code,
         color_hex=payload.color_hex,

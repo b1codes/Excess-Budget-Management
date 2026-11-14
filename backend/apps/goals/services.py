@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from apps.common.firestore import get_client
 from apps.common.firestore_helpers import get_owned_or_404_fs
-from apps.common.money import to_cents, from_cents
+from apps.common.money import to_cents, from_cents, normalize
 from apps.common.rollups import (
     recompute_subgoal_parent,
     recompute_goal_from_accounts,
@@ -78,7 +78,7 @@ def create_goal(user, payload) -> Goal:
         id=goal_id,
         user_id=str(user.id),
         name=payload.name,
-        target_amount=payload.target_amount,
+        target_amount=normalize(payload.target_amount),
         current_amount=Decimal("0.00"),
         target_date=payload.target_date,
         type=payload.type,
@@ -181,8 +181,8 @@ def create_subgoal(user, goal_id, payload) -> Subgoal:
         goal_id=uuid.UUID(str(goal_id)),
         user_id=str(user.id),
         name=payload.name,
-        target_amount=payload.target_amount,
-        current_amount=payload.current_amount,
+        target_amount=normalize(payload.target_amount),
+        current_amount=normalize(payload.current_amount),
         created_at=now,
     )
 

@@ -51,10 +51,15 @@ class ExtraIncomeOut(Schema):
     created_at: datetime
 
 
+_ZERO = Decimal("0")
+_ONE = Decimal("1")
+
+
 class OvertimeSettingsIn(Schema):
-    hourly_base_rate: condecimal(max_digits=12, decimal_places=2) | None = None
-    overtime_multiplier: condecimal(max_digits=4, decimal_places=2) | None = None
-    estimated_tax_rate: condecimal(max_digits=4, decimal_places=2) | None = None
+    hourly_base_rate: condecimal(ge=_ZERO, max_digits=12, decimal_places=2) | None = None
+    overtime_multiplier: condecimal(ge=_ZERO, max_digits=4, decimal_places=2) | None = None
+    # A fraction, as the app's form says ("0.00 to 1.00"), not a percentage.
+    estimated_tax_rate: condecimal(ge=_ZERO, le=_ONE, max_digits=4, decimal_places=2) | None = None
 
 
 class OvertimeSettingsOut(Schema):
@@ -66,10 +71,12 @@ class OvertimeSettingsOut(Schema):
 
 
 class OvertimeProjectionRequest(Schema):
-    overtime_hours_per_week: condecimal(max_digits=5, decimal_places=2)
+    # Non-negative inputs keep monthly income >= 0, so the "with overtime"
+    # divisor (standard_contribution + monthly overtime) can't reach zero.
+    overtime_hours_per_week: condecimal(ge=_ZERO, max_digits=5, decimal_places=2)
     goal_id: uuid.UUID | None = None
     subgoal_id: uuid.UUID | None = None
-    standard_contribution: condecimal(max_digits=12, decimal_places=2) = Decimal("0.00")
+    standard_contribution: condecimal(ge=_ZERO, max_digits=12, decimal_places=2) = Decimal("0.00")
 
 
 class OvertimeProjectionOut(Schema):

@@ -4,7 +4,7 @@ from decimal import Decimal
 from google.cloud import firestore
 from apps.common.firestore import get_client
 from apps.common.firestore_helpers import get_owned_or_404_fs
-from apps.common.money import to_cents, from_cents
+from apps.common.money import to_cents, from_cents, normalize
 from apps.common.rollups import apply_extra_income_effects
 from apps.goals.services import get_goal, get_subgoal
 from .models import IncomeSource, ExtraIncome, OvertimeSettings
@@ -56,7 +56,7 @@ def create_source(user, payload) -> IncomeSource:
         id=source_id,
         user_id=str(user.id),
         name=payload.name,
-        expected_amount=payload.expected_amount,
+        expected_amount=normalize(payload.expected_amount),
         frequency=payload.frequency,
         created_at=now,
     )
@@ -156,7 +156,7 @@ def create_extra(user, payload) -> ExtraIncome:
     return ExtraIncome(
         id=extra_id,
         user_id=str(user.id),
-        amount=payload.amount,
+        amount=normalize(payload.amount),
         description=payload.description,
         date_received=payload.date_received,
         account_id=payload.account_id,

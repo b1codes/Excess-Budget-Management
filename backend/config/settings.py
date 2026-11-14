@@ -65,14 +65,16 @@ _db_url = os.environ.get("DATABASE_URL", "")
 
 
 def _parse_db(url: str) -> dict:
-    from urllib.parse import urlparse
+    from urllib.parse import unquote, urlparse
 
     u = urlparse(url)
+    # urlparse leaves percent-escapes in place; credentials containing @ : / etc.
+    # must be URL-encoded in DATABASE_URL, so decode them here.
     return {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": u.path.lstrip("/"),
-        "USER": u.username,
-        "PASSWORD": u.password,
+        "USER": unquote(u.username) if u.username else u.username,
+        "PASSWORD": unquote(u.password) if u.password else u.password,
         "HOST": u.hostname,
         "PORT": str(u.port or 5432),
     }

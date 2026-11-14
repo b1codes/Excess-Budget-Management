@@ -83,10 +83,27 @@ def call_gemini(prompt: str) -> dict:
         raise UpstreamError(f"Gemini call failed: {e}") from e
 
 
+def _validate(result) -> dict:
+    """Model output is untrusted: check it matches SuggestOut before persisting
+    or returning it, so a malformed reply is a 502 rather than a 500. Returns
+    the raw reply unchanged; that's what the audit record stores."""
+    from pydantic import ValidationError
+    from .schemas import SuggestOut
+
+    try:
+        SuggestOut.model_validate(result)
+    except ValidationError as e:
+        raise UpstreamError(
+            "Gemini returned a response in an unexpected format.",
+            details={"errors": e.errors(include_url=False, include_input=False)},
+        ) from e
+    return result
+
+
 def generate(user, excess: Decimal) -> dict:
     ctx = gather_context(user)
     prompt = _build_prompt(excess, ctx)
-    result = call_gemini(prompt)
+    result = _validate(call_gemini(prompt))
 
     suggestion_id = uuid.uuid4()
     get_client().collection(COLLECTION).document(str(suggestion_id)).set(

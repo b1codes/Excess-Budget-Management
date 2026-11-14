@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from google.cloud import firestore
 from apps.common.firestore import get_client
 from apps.common.firestore_helpers import get_owned_or_404_fs
-from apps.common.money import to_cents, from_cents
+from apps.common.money import to_cents, from_cents, normalize
 from apps.common.rollups import apply_allocation_effects
 from apps.common.exceptions import AppError
 from .models import GoalAllocation
@@ -81,7 +81,7 @@ def create_allocation(user, payload) -> GoalAllocation:
         goal_id=payload.goal_id,
         sub_goal_id=payload.sub_goal_id,
         account_id=payload.account_id,
-        amount=payload.amount,
+        amount=normalize(payload.amount),
         created_at=now,
     )
 
@@ -119,6 +119,15 @@ def update_allocation(user, allocation_id, payload) -> GoalAllocation:
         updates["sub_goal_id"] = str(payload.sub_goal_id)
     elif "sub_goal_id" in fields_set and payload.sub_goal_id is None:
         updates["sub_goal_id"] = None
+    elif old_data.get("sub_goal_id") and effective_goal_id != old_data["goal_id"]:
+        # Moving to another goal without saying what happens to the subgoal
+        # would leave this allocation pointing at a subgoal of the old goal.
+        raise AppError(
+            code="subgoal_goal_mismatch",
+            message="Changing goal_id also requires sub_goal_id (a subgoal of the new goal, "
+            "or null).",
+            status_code=400,
+        )
 
     if payload.account_id is not None:
         get_owned_or_404_fs("accounts", payload.account_id, user)
