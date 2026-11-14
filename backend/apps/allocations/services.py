@@ -119,6 +119,15 @@ def update_allocation(user, allocation_id, payload) -> GoalAllocation:
         updates["sub_goal_id"] = str(payload.sub_goal_id)
     elif "sub_goal_id" in fields_set and payload.sub_goal_id is None:
         updates["sub_goal_id"] = None
+    elif old_data.get("sub_goal_id") and effective_goal_id != old_data["goal_id"]:
+        # Moving to another goal without saying what happens to the subgoal
+        # would leave this allocation pointing at a subgoal of the old goal.
+        raise AppError(
+            code="subgoal_goal_mismatch",
+            message="Changing goal_id also requires sub_goal_id (a subgoal of the new goal, "
+            "or null).",
+            status_code=400,
+        )
 
     if payload.account_id is not None:
         get_owned_or_404_fs("accounts", payload.account_id, user)
