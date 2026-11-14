@@ -434,9 +434,13 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
             // Rate Card
             Container(
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+                color: theme.colorScheme.primaryContainer.withValues(
+                  alpha: 0.1,
+                ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -477,9 +481,15 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
             // Income Projections Card
             Container(
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.3),
+                color: theme.colorScheme.surfaceContainerLow.withValues(
+                  alpha: 0.3,
+                ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2)),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.2,
+                  ),
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -514,9 +524,15 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
             if (hasTarget)
               Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.3),
+                  color: theme.colorScheme.surfaceContainerLow.withValues(
+                    alpha: 0.3,
+                  ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.2,
+                    ),
+                  ),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -555,7 +571,11 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
                               decoration: BoxDecoration(
                                 color: theme.colorScheme.tertiaryContainer,
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: theme.colorScheme.tertiary.withValues(alpha: 0.3)),
+                                border: Border.all(
+                                  color: theme.colorScheme.tertiary.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
                               ),
                               child: Text(
                                 '${proj.monthsSaved!.toStringAsFixed(1)} mos saved',

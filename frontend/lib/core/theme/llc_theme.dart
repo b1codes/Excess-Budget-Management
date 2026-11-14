@@ -61,36 +61,54 @@ abstract final class LLCTheme {
       brightness: brightness,
       primary: isDark ? LLCColors.instrumentCyan : LLCColors.instrumentCyanDeep,
       onPrimary: isDark ? LLCColors.voidBlack : LLCColors.mist,
-      primaryContainer: isDark ? const Color(0xFF0F2630) : const Color(0xFFE0F7FF),
-      onPrimaryContainer: isDark ? LLCColors.instrumentCyan : LLCColors.instrumentCyanDeep,
+      primaryContainer: isDark
+          ? const Color(0xFF0F2630)
+          : const Color(0xFFE0F7FF),
+      onPrimaryContainer: isDark
+          ? LLCColors.instrumentCyan
+          : LLCColors.instrumentCyanDeep,
       secondary: isDark ? LLCColors.steelGray : LLCColors.graphiteSoft,
       onSecondary: isDark ? LLCColors.voidBlack : LLCColors.mist,
-      secondaryContainer: isDark ? const Color(0xFF20252C) : const Color(0xFFECF0F3),
+      secondaryContainer: isDark
+          ? const Color(0xFF20252C)
+          : const Color(0xFFECF0F3),
       onSecondaryContainer: isDark ? LLCColors.chromeWhite : LLCColors.graphite,
       tertiary: isDark ? LLCColors.affirmMint : LLCColors.affirmMintDeep,
       onTertiary: isDark ? LLCColors.voidBlack : LLCColors.mist,
-      tertiaryContainer: isDark ? const Color(0xFF0E3020) : const Color(0xFFE8F9F1),
-      onTertiaryContainer: isDark ? LLCColors.affirmMint : LLCColors.affirmMintDeep,
+      tertiaryContainer: isDark
+          ? const Color(0xFF0E3020)
+          : const Color(0xFFE8F9F1),
+      onTertiaryContainer: isDark
+          ? LLCColors.affirmMint
+          : LLCColors.affirmMintDeep,
       error: LLCColors.thermalCore,
       onError: LLCColors.chromeWhite,
-      errorContainer: isDark ? const Color(0xFF3C1414) : const Color(0xFFFEECEB),
+      errorContainer: isDark
+          ? const Color(0xFF3C1414)
+          : const Color(0xFFFEECEB),
       onErrorContainer: LLCColors.thermalCore,
       surface: isDark ? LLCColors.voidBlack : LLCColors.mist,
       onSurface: isDark ? LLCColors.chromeWhite : LLCColors.graphite,
-      surfaceContainerHighest:
-          isDark ? LLCColors.panelElevated : LLCColors.mistElevated,
+      surfaceContainerHighest: isDark
+          ? LLCColors.panelElevated
+          : LLCColors.mistElevated,
       onSurfaceVariant: isDark ? LLCColors.steelGray : LLCColors.graphiteSoft,
       outline: isDark ? LLCColors.glassBorderDark : LLCColors.glassBorderLight,
-      outlineVariant:
-          isDark ? LLCColors.glassFillDark : LLCColors.glassFillLight,
+      outlineVariant: isDark
+          ? LLCColors.glassFillDark
+          : LLCColors.glassFillLight,
       shadow: Colors.black,
       inverseSurface: isDark ? LLCColors.chromeWhite : LLCColors.graphite,
       onInverseSurface: isDark ? LLCColors.voidBlack : LLCColors.mist,
     );
 
     final baseText = isDark
-        ? GoogleFonts.openSansTextTheme(ThemeData(brightness: brightness).textTheme)
-        : GoogleFonts.openSansTextTheme(ThemeData(brightness: brightness).textTheme);
+        ? GoogleFonts.openSansTextTheme(
+            ThemeData(brightness: brightness).textTheme,
+          )
+        : GoogleFonts.openSansTextTheme(
+            ThemeData(brightness: brightness).textTheme,
+          );
 
     // Headline/structural clarity: Montserrat Bold/ExtraBold.
     // Body/dense technical reading: Open Sans Light/Regular.
@@ -182,9 +200,7 @@ abstract final class LLCTheme {
         elevation: 0,
         color: colorScheme.surfaceContainerHighest,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,

@@ -61,9 +61,8 @@ class BudgetCategoryCard extends StatelessWidget {
                       children: [
                         Text(
                           category.name,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
                         Row(
@@ -76,7 +75,8 @@ class BudgetCategoryCard extends StatelessWidget {
                                       ? Icons.arrow_upward
                                       : Icons.warning_amber_rounded,
                                   size: 14,
-                                  color: category.type == BudgetCategoryType.income
+                                  color:
+                                      category.type == BudgetCategoryType.income
                                       ? LLCColors.affirmMint
                                       : colorScheme.error,
                                 ),

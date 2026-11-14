@@ -73,9 +73,9 @@ class _LoginFormState extends State<LoginForm> {
               const SizedBox(height: 8),
               Text(
                 'Enter your details to access your account.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
@@ -157,7 +157,11 @@ class _LoginFormState extends State<LoginForm> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: Divider(color: Theme.of(context).colorScheme.outline)),
+                  Expanded(
+                    child: Divider(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Text(
@@ -168,7 +172,11 @@ class _LoginFormState extends State<LoginForm> {
                       ),
                     ),
                   ),
-                  Expanded(child: Divider(color: Theme.of(context).colorScheme.outline)),
+                  Expanded(
+                    child: Divider(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -182,7 +190,9 @@ class _LoginFormState extends State<LoginForm> {
                 label: const Text('Continue with Auth0'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

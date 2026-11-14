@@ -96,9 +96,13 @@ class ProjectedBalanceSummary extends StatelessWidget {
                                             .bodySmall
                                             ?.copyWith(
                                               color: delta > 0
-                                                  ? Theme.of(context).colorScheme.tertiary
+                                                  ? Theme.of(
+                                                      context,
+                                                    ).colorScheme.tertiary
                                                   : (delta < 0
-                                                        ? Theme.of(context).colorScheme.error
+                                                        ? Theme.of(
+                                                            context,
+                                                          ).colorScheme.error
                                                         : null),
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -112,8 +116,14 @@ class ProjectedBalanceSummary extends StatelessWidget {
                                         .labelSmall
                                         ?.copyWith(
                                           color: delta > 0
-                                              ? Theme.of(context).colorScheme.tertiary
-                                              : (delta < 0 ? Theme.of(context).colorScheme.error : null),
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.tertiary
+                                              : (delta < 0
+                                                    ? Theme.of(
+                                                        context,
+                                                      ).colorScheme.error
+                                                    : null),
                                         ),
                                   ),
                                 ],

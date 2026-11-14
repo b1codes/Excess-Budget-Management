@@ -154,266 +154,268 @@ class _BudgetCategoryFormSheetState extends State<BudgetCategoryFormSheet> {
           top: 24.0,
           bottom: bottomInset > 0 ? bottomInset : 8.0,
         ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Handle Handle
-              Center(
-                child: Container(
-                  width: 32,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Handle Handle
+                Center(
+                  child: Container(
+                    width: 32,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
 
-              Text(
-                widget.category == null
-                    ? 'New Budget Category'
-                    : 'Edit Category',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                Text(
+                  widget.category == null
+                      ? 'New Budget Category'
+                      : 'Edit Category',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Presets List (Only show when adding)
-              if (widget.category == null) ...[
+                // Presets List (Only show when adding)
+                if (widget.category == null) ...[
+                  SizedBox(
+                    height: 48,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _presets.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final preset = _presets[index];
+                        return ActionChip(
+                          avatar: Icon(
+                            preset.icon,
+                            size: 16,
+                            color: preset.color,
+                          ),
+                          label: Text(preset.name),
+                          onPressed: () {
+                            setState(() {
+                              _nameController.text = preset.name;
+                              _selectedIcon = preset.icon;
+                              _selectedColor = preset.color;
+                            });
+                          },
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHigh,
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Icon & Color Preview
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => _showIconPicker(),
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: _selectedColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: _selectedColor.withValues(alpha: 0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: Icon(
+                          _selectedIcon,
+                          color: _selectedColor,
+                          size: 32,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Icon & Color',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Tap the box to change icon or select a color below.',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Color Picker (Horizontal)
                 SizedBox(
-                  height: 48,
+                  height: 40,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    itemCount: _presets.length,
+                    itemCount: _colorOptions.length,
                     separatorBuilder: (context, index) =>
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
                     itemBuilder: (context, index) {
-                      final preset = _presets[index];
-                      return ActionChip(
-                        avatar: Icon(
-                          preset.icon,
-                          size: 16,
-                          color: preset.color,
-                        ),
-                        label: Text(preset.name),
-                        onPressed: () {
-                          setState(() {
-                            _nameController.text = preset.name;
-                            _selectedIcon = preset.icon;
-                            _selectedColor = preset.color;
-                          });
-                        },
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHigh,
-                        side: BorderSide.none,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                      final color = _colorOptions[index];
+                      final isSelected = _selectedColor == color;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedColor = color),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.onSurface
+                                  : Colors.transparent,
+                              width: 3,
+                            ),
+                          ),
+                          child: isSelected
+                              ? const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 20,
+                                )
+                              : null,
                         ),
                       );
                     },
                   ),
                 ),
-                const SizedBox(height: 16),
-              ],
+                const SizedBox(height: 24),
 
-              // Icon & Color Preview
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => _showIconPicker(),
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: _selectedColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: _selectedColor.withValues(alpha: 0.3),
-                          width: 2,
-                        ),
-                      ),
-                      child: Icon(
-                        _selectedIcon,
-                        color: _selectedColor,
-                        size: 32,
-                      ),
+                // Type Selector
+                Text(
+                  'Category Type',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                SegmentedButton<BudgetCategoryType>(
+                  segments: const [
+                    ButtonSegment<BudgetCategoryType>(
+                      value: BudgetCategoryType.expense,
+                      label: Text('Expense'),
+                      icon: Icon(Icons.outbound),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Icon & Color',
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Tap the box to change icon or select a color below.',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
+                    ButtonSegment<BudgetCategoryType>(
+                      value: BudgetCategoryType.income,
+                      label: Text('Income'),
+                      icon: Icon(Icons.call_received),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Color Picker (Horizontal)
-              SizedBox(
-                height: 40,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _colorOptions.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    final color = _colorOptions[index];
-                    final isSelected = _selectedColor == color;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedColor = color),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isSelected
-                                ? Theme.of(context).colorScheme.onSurface
-                                : Colors.transparent,
-                            width: 3,
-                          ),
-                        ),
-                        child: isSelected
-                            ? const Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 20,
-                              )
-                            : null,
-                      ),
-                    );
+                  ],
+                  selected: {_selectedType},
+                  onSelectionChanged: (Set<BudgetCategoryType> newSelection) {
+                    setState(() {
+                      _selectedType = newSelection.first;
+                      // Auto-adjust color if it's still default or based on type
+                      if (_selectedType == BudgetCategoryType.income &&
+                          _selectedColor == Colors.grey) {
+                        _selectedColor = Colors.green;
+                      } else if (_selectedType == BudgetCategoryType.expense &&
+                          _selectedColor == Colors.green) {
+                        // Maybe keep it or change to something else if we want
+                      }
+                    });
                   },
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Type Selector
-              Text(
-                'Category Type',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              SegmentedButton<BudgetCategoryType>(
-                segments: const [
-                  ButtonSegment<BudgetCategoryType>(
-                    value: BudgetCategoryType.expense,
-                    label: Text('Expense'),
-                    icon: Icon(Icons.outbound),
+                TextFormField(
+                  controller: _nameController,
+                  autofocus: widget.category == null,
+                  decoration: InputDecoration(
+                    labelText: 'Category Name',
+                    prefixIcon: const Icon(Icons.label_outline),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
                   ),
-                  ButtonSegment<BudgetCategoryType>(
-                    value: BudgetCategoryType.income,
-                    label: Text('Income'),
-                    icon: Icon(Icons.call_received),
-                  ),
-                ],
-                selected: {_selectedType},
-                onSelectionChanged: (Set<BudgetCategoryType> newSelection) {
-                  setState(() {
-                    _selectedType = newSelection.first;
-                    // Auto-adjust color if it's still default or based on type
-                    if (_selectedType == BudgetCategoryType.income &&
-                        _selectedColor == Colors.grey) {
-                      _selectedColor = Colors.green;
-                    } else if (_selectedType == BudgetCategoryType.expense &&
-                        _selectedColor == Colors.green) {
-                      // Maybe keep it or change to something else if we want
-                    }
-                  });
-                },
-              ),
-              const SizedBox(height: 24),
-
-              TextFormField(
-                controller: _nameController,
-                autofocus: widget.category == null,
-                decoration: InputDecoration(
-                  labelText: 'Category Name',
-                  prefixIcon: const Icon(Icons.label_outline),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
+                  validator: (value) =>
+                      ValidationUtils.validateRequired(value, 'Category Name'),
                 ),
-                validator: (value) =>
-                    ValidationUtils.validateRequired(value, 'Category Name'),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _limitController,
-                decoration: InputDecoration(
-                  labelText: _selectedType == BudgetCategoryType.income
-                      ? 'Target Amount'
-                      : 'Limit Amount',
-                  prefixIcon: const Icon(Icons.attach_money),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _limitController,
+                  decoration: InputDecoration(
+                    labelText: _selectedType == BudgetCategoryType.income
+                        ? 'Target Amount'
+                        : 'Limit Amount',
+                    prefixIcon: const Icon(Icons.attach_money),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
                   ),
-                  filled: true,
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _save(),
-                validator: ValidationUtils.validateAmount,
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: _save,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
                   ),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _save(),
+                  validator: ValidationUtils.validateAmount,
                 ),
-                child: Text(
-                  widget.category == null ? 'Create Category' : 'Save Changes',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _save,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                  child: Text(
+                    widget.category == null
+                        ? 'Create Category'
+                        : 'Save Changes',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _showIconPicker() {
     showModalBottomSheet(

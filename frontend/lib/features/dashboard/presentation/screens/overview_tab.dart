@@ -195,9 +195,7 @@ class _OverviewTabState extends State<OverviewTab> {
                       else if (state is DashboardError)
                         Center(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 40,
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 40),
                             child: Text(
                               'Error: ${state.message}',
                               style: const TextStyle(color: Colors.red),
@@ -267,11 +265,7 @@ class _OverviewTabState extends State<OverviewTab> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.auto_awesome,
-                  color: colorScheme.primary,
-                  size: 20,
-                ),
+                Icon(Icons.auto_awesome, color: colorScheme.primary, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'AI Analysis',
@@ -286,9 +280,9 @@ class _OverviewTabState extends State<OverviewTab> {
             const SizedBox(height: 16),
             Text(
               'How much do you want to allocate?',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             Row(
@@ -336,9 +330,7 @@ class _OverviewTabState extends State<OverviewTab> {
               onPressed: () => _showManualAllocation(goals),
               icon: const Icon(Icons.add_circle_outline, size: 18),
               label: const Text('Perform Manual Allocation'),
-              style: TextButton.styleFrom(
-                foregroundColor: colorScheme.primary,
-              ),
+              style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
             ),
           ],
         ),
@@ -514,8 +506,12 @@ class _OverviewTabState extends State<OverviewTab> {
                     child: LinearProgressIndicator(
                       value: budgetProgress,
                       minHeight: 6,
-                      backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                      valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
+                      valueColor: AlwaysStoppedAnimation(
+                        Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                   ),
                 ],
@@ -534,8 +530,12 @@ class _OverviewTabState extends State<OverviewTab> {
                     child: LinearProgressIndicator(
                       value: goalProgress,
                       minHeight: 6,
-                      backgroundColor: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
-                      valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.tertiary),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.tertiary.withValues(alpha: 0.1),
+                      valueColor: AlwaysStoppedAnimation(
+                        Theme.of(context).colorScheme.tertiary,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),

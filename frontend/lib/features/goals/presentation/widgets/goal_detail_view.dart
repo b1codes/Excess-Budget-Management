@@ -279,192 +279,194 @@ class _GoalDetailViewState extends State<GoalDetailView> {
 
     return Column(
       children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 8.0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Text(
-                      _currentGoal.name,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(
+                  _currentGoal.name,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  Row(
-                    children: [
-                      if (_isLoading)
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      else
-                        IconButton(
-                          icon: const Icon(Icons.refresh),
-                          onPressed: _refreshGoal,
-                        ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.delete_outline,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Delete Goal'),
-                              content: Text(
-                                'Are you sure you want to delete "${_currentGoal.name}"?',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('Cancel'),
-                                ),
-                                TextButton(
-                                  onPressed: () async {
-                                    await _goalRepository.deleteGoal(
-                                      _currentGoal.id,
-                                    );
-                                    if (context.mounted) {
-                                      Navigator.pop(context);
-                                      widget.onDelete?.call();
-                                    }
-                                  },
-                                  child: Text(
-                                    'Delete',
-                                    style: TextStyle(color: Theme.of(context).colorScheme.error),
-                                  ),
-                                ),
-                              ],
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Row(
+                children: [
+                  if (_isLoading)
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: _refreshGoal,
+                    ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Delete Goal'),
+                          content: Text(
+                            'Are you sure you want to delete "${_currentGoal.name}"?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancel'),
                             ),
-                          );
-                        },
-                      ),
-                    ],
+                            TextButton(
+                              onPressed: () async {
+                                await _goalRepository.deleteGoal(
+                                  _currentGoal.id,
+                                );
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  widget.onDelete?.call();
+                                }
+                              },
+                              child: Text(
+                                'Delete',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
-            ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _refreshGoal,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            ],
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _refreshGoal,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildParentProgressCard(progress),
+                  const SizedBox(height: 32),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildParentProgressCard(progress),
-                      const SizedBox(height: 32),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Line Items (Subgoals)',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          if (_currentGoal.accountIds.isEmpty)
-                            IconButton(
-                              onPressed: _showAddSubGoal,
-                              icon: const Icon(Icons.add_circle_outline),
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (_currentGoal.accountIds.isNotEmpty)
-                        BlocBuilder<AccountBloc, AccountState>(
-                          builder: (context, state) {
-                            if (state is AccountLoaded) {
-                              final linkedAccounts = state.accounts
-                                  .where(
-                                    (a) =>
-                                        _currentGoal.accountIds.contains(a.id),
-                                  )
-                                  .toList();
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Padding(
-                                    padding: EdgeInsets.only(top: 8, bottom: 8),
-                                    child: Text(
-                                      'Linked Accounts:',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  ...linkedAccounts.map(
-                                    (a) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.account_balance_wallet,
-                                            size: 16,
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(a.name),
-                                          const Spacer(),
-                                          Text(
-                                            '\$${a.balance.toStringAsFixed(2)}',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                ],
-                              );
-                            }
-                            return const SizedBox.shrink();
-                          },
+                      Text(
+                        'Line Items (Subgoals)',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                      if (_currentGoal.subGoals.isEmpty)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(32.0),
-                            child: Text(
-                              'No subgoals yet. Breakdown your goal into line items!',
-                            ),
-                          ),
-                        )
-                      else
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _currentGoal.subGoals.length,
-                          itemBuilder: (context, index) {
-                            return _buildSubGoalItem(
-                              _currentGoal.subGoals[index],
-                            );
-                          },
+                      ),
+                      if (_currentGoal.accountIds.isEmpty)
+                        IconButton(
+                          onPressed: _showAddSubGoal,
+                          icon: const Icon(Icons.add_circle_outline),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  if (_currentGoal.accountIds.isNotEmpty)
+                    BlocBuilder<AccountBloc, AccountState>(
+                      builder: (context, state) {
+                        if (state is AccountLoaded) {
+                          final linkedAccounts = state.accounts
+                              .where(
+                                (a) => _currentGoal.accountIds.contains(a.id),
+                              )
+                              .toList();
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(top: 8, bottom: 8),
+                                child: Text(
+                                  'Linked Accounts:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              ...linkedAccounts.map(
+                                (a) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.account_balance_wallet,
+                                        size: 16,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(a.name),
+                                      const Spacer(),
+                                      Text(
+                                        '\$${a.balance.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  if (_currentGoal.subGoals.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Text(
+                          'No subgoals yet. Breakdown your goal into line items!',
+                        ),
+                      ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _currentGoal.subGoals.length,
+                      itemBuilder: (context, index) {
+                        return _buildSubGoalItem(_currentGoal.subGoals[index]);
+                      },
+                    ),
+                ],
               ),
             ),
-          ],
-        );
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildParentProgressCard(double progress) {
     final isCompleted = _currentGoal.isCompleted;
     final colorScheme = Theme.of(context).colorScheme;
-    final progressColor = isCompleted ? LLCColors.affirmMint : colorScheme.primary;
+    final progressColor = isCompleted
+        ? LLCColors.affirmMint
+        : colorScheme.primary;
 
     return RefractiveGlass(
       borderRadius: 20,
@@ -478,9 +480,7 @@ class _GoalDetailViewState extends State<GoalDetailView> {
               children: [
                 Text(
                   'Overall Progress',
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -494,12 +494,18 @@ class _GoalDetailViewState extends State<GoalDetailView> {
                         decoration: BoxDecoration(
                           color: LLCColors.affirmMint.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: LLCColors.affirmMint.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: LLCColors.affirmMint.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.check_circle, color: LLCColors.affirmMint, size: 16),
+                            Icon(
+                              Icons.check_circle,
+                              color: LLCColors.affirmMint,
+                              size: 16,
+                            ),
                             SizedBox(width: 4),
                             Text(
                               'Completed',
@@ -522,12 +528,18 @@ class _GoalDetailViewState extends State<GoalDetailView> {
                         decoration: BoxDecoration(
                           color: colorScheme.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: colorScheme.primary.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: colorScheme.primary.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.sync, color: colorScheme.primary, size: 16),
+                            Icon(
+                              Icons.sync,
+                              color: colorScheme.primary,
+                              size: 16,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Synced',
@@ -592,8 +604,12 @@ class _GoalDetailViewState extends State<GoalDetailView> {
                   icon: const Icon(Icons.add_card),
                   label: const Text('Fund Goal'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: isCompleted ? LLCColors.affirmMint : colorScheme.primary,
-                    foregroundColor: isCompleted ? LLCColors.voidBlack : colorScheme.onPrimary,
+                    backgroundColor: isCompleted
+                        ? LLCColors.affirmMint
+                        : colorScheme.primary,
+                    foregroundColor: isCompleted
+                        ? LLCColors.voidBlack
+                        : colorScheme.onPrimary,
                   ),
                 ),
               ),
@@ -605,12 +621,18 @@ class _GoalDetailViewState extends State<GoalDetailView> {
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: colorScheme.primary.withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: colorScheme.primary.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.info_outline, color: colorScheme.primary, size: 16),
+                    Icon(
+                      Icons.info_outline,
+                      color: colorScheme.primary,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Synced with Account Balances',
@@ -654,9 +676,8 @@ class _GoalDetailViewState extends State<GoalDetailView> {
                         Flexible(
                           child: Text(
                             subGoal.name,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),

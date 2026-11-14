@@ -232,7 +232,10 @@ class AccountDetailView extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             IconButton.outlined(
-              icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+              icon: Icon(
+                Icons.delete_outline,
+                color: Theme.of(context).colorScheme.error,
+              ),
               onPressed: () => _showDeleteDialog(context, account),
               tooltip: 'Delete Account',
             ),
@@ -347,8 +350,12 @@ class AccountDetailView extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 leading: CircleAvatar(
                   backgroundColor: isExpense
-                      ? Theme.of(context).colorScheme.error.withValues(alpha: 0.1)
-                      : Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.error.withValues(alpha: 0.1)
+                      : Theme.of(
+                          context,
+                        ).colorScheme.tertiary.withValues(alpha: 0.1),
                   child: Icon(
                     isExpense ? Icons.remove : Icons.add,
                     color: isExpense
