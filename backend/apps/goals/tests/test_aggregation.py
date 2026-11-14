@@ -11,7 +11,12 @@ from apps.common.exceptions import NotFoundError
 from apps.expenses.services import create_expense, get_expense
 from apps.expenses.schemas import ExpenseIn
 from apps.goals.services import (
-    create_goal, create_subgoal, delete_goal, delete_subgoal, link_account, get_goal,
+    create_goal,
+    create_subgoal,
+    delete_goal,
+    delete_subgoal,
+    link_account,
+    get_goal,
 )
 from apps.accounts.schemas import AccountIn
 from apps.goals.schemas import GoalIn, SubgoalIn
@@ -23,8 +28,13 @@ def u(db):
 
 
 def _goal_payload(**overrides):
-    defaults = dict(name="g", target_amount=Decimal("0"), target_date=None,
-                    type="short_term", category="savings")
+    defaults = dict(
+        name="g",
+        target_amount=Decimal("0"),
+        target_date=None,
+        type="short_term",
+        category="savings",
+    )
     defaults.update(overrides)
     return GoalIn(**defaults)
 
@@ -37,8 +47,18 @@ def _subgoal_payload(**overrides):
 
 def test_subgoals_aggregate_to_parent(u):
     g = create_goal(u, _goal_payload(name="Vacation", type="short_term", category="purchase"))
-    create_subgoal(u, g.id, _subgoal_payload(name="Flights", target_amount=Decimal("500"), current_amount=Decimal("100")))
-    create_subgoal(u, g.id, _subgoal_payload(name="Hotel", target_amount=Decimal("700"), current_amount=Decimal("0")))
+    create_subgoal(
+        u,
+        g.id,
+        _subgoal_payload(
+            name="Flights", target_amount=Decimal("500"), current_amount=Decimal("100")
+        ),
+    )
+    create_subgoal(
+        u,
+        g.id,
+        _subgoal_payload(name="Hotel", target_amount=Decimal("700"), current_amount=Decimal("0")),
+    )
 
     refreshed = get_goal(u, g.id)
     assert refreshed.target_amount == Decimal("1200.00")
@@ -47,8 +67,16 @@ def test_subgoals_aggregate_to_parent(u):
 
 def test_subgoal_delete_recomputes_parent(u):
     g = create_goal(u, _goal_payload(type="short_term", category="savings"))
-    s1 = create_subgoal(u, g.id, _subgoal_payload(name="a", target_amount=Decimal("10"), current_amount=Decimal("5")))
-    create_subgoal(u, g.id, _subgoal_payload(name="b", target_amount=Decimal("20"), current_amount=Decimal("0")))
+    s1 = create_subgoal(
+        u,
+        g.id,
+        _subgoal_payload(name="a", target_amount=Decimal("10"), current_amount=Decimal("5")),
+    )
+    create_subgoal(
+        u,
+        g.id,
+        _subgoal_payload(name="b", target_amount=Decimal("20"), current_amount=Decimal("0")),
+    )
 
     delete_subgoal(u, g.id, s1.id)
 
@@ -58,8 +86,12 @@ def test_subgoal_delete_recomputes_parent(u):
 
 
 def test_linked_accounts_drive_goal_current(u):
-    g = create_goal(u, _goal_payload(name="Emergency", target_amount=Decimal("1000"),
-                                     type="long_term", category="savings"))
+    g = create_goal(
+        u,
+        _goal_payload(
+            name="Emergency", target_amount=Decimal("1000"), type="long_term", category="savings"
+        ),
+    )
     a1 = create_account(u, AccountIn(name="Sav1", balance=Decimal("300")))
     a2 = create_account(u, AccountIn(name="Sav2", balance=Decimal("400")))
 
@@ -86,12 +118,15 @@ def test_account_balance_change_propagates(u):
 
 # --- on_delete parity (ported from Postgres CASCADE / SET_NULL) --------------
 
+
 def test_goal_delete_cascades_allocations_and_reverses_balance(u):
     """Django: GoalAllocation.goal is on_delete=CASCADE, and the cascaded delete
     fires post_delete, which restores the debited account balance."""
     acc = create_account(u, AccountIn(name="Chk", balance=Decimal("500")))
     g = create_goal(u, _goal_payload(name="Car", type="short_term", category="purchase"))
-    alloc = create_allocation(u, AllocationIn(goal_id=g.id, account_id=acc.id, amount=Decimal("200")))
+    alloc = create_allocation(
+        u, AllocationIn(goal_id=g.id, account_id=acc.id, amount=Decimal("200"))
+    )
 
     assert get_account(u, acc.id).balance == Decimal("300.00")
 
@@ -126,10 +161,15 @@ def test_account_delete_cascades_links_and_set_nulls_expenses(u):
 
     assert get_goal(u, g.id).current_amount == Decimal("300.00")
 
-    cat = create_category(u, BudgetCategoryIn(name="Food", limit_amount=Decimal("100"),
-                                              category_type="expense"))
-    expense = create_expense(u, ExpenseIn(budget_category_id=cat.id, account_id=acc.id,
-                                          amount=Decimal("25"), date=date.today()))
+    cat = create_category(
+        u, BudgetCategoryIn(name="Food", limit_amount=Decimal("100"), category_type="expense")
+    )
+    expense = create_expense(
+        u,
+        ExpenseIn(
+            budget_category_id=cat.id, account_id=acc.id, amount=Decimal("25"), date=date.today()
+        ),
+    )
 
     delete_account(u, acc.id)
 

@@ -25,9 +25,7 @@ def test_generate_requires_auth():
 @pytest.mark.django_db
 def test_generate_returns_suggestion_and_persists_audit(auth_client):
     client, user = auth_client
-    Profile.objects.update_or_create(
-        user=user, defaults={"default_savings_ratio": Decimal("0.5")}
-    )
+    Profile.objects.update_or_create(user=user, defaults={"default_savings_ratio": Decimal("0.5")})
     create_goal(
         user,
         GoalIn(
@@ -53,9 +51,7 @@ def test_generate_returns_suggestion_and_persists_audit(auth_client):
     from apps.common.firestore import get_client
     from apps.suggestions.services import COLLECTION
 
-    docs = list(
-        get_client().collection(COLLECTION).where("user_id", "==", str(user.id)).stream()
-    )
+    docs = list(get_client().collection(COLLECTION).where("user_id", "==", str(user.id)).stream())
     assert len(docs) == 1
 
 

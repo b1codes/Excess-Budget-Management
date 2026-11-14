@@ -2,7 +2,11 @@ from ninja import Router
 from config.auth import JWTAuth
 from .schemas import BudgetCategoryIn, BudgetCategoryPatch, BudgetCategoryOut
 from .services import (
-    list_categories, create_category, get_category, update_category, delete_category,
+    list_categories,
+    create_category,
+    get_category,
+    update_category,
+    delete_category,
 )
 
 categories_router = Router(tags=["budget"], auth=JWTAuth())
@@ -23,7 +27,9 @@ def get(request, category_id: str):
     return get_category(request.auth, category_id)
 
 
-@categories_router.patch("/{category_id}", response=BudgetCategoryOut, summary="Update budget category")
+@categories_router.patch(
+    "/{category_id}", response=BudgetCategoryOut, summary="Update budget category"
+)
 def patch(request, category_id: str, payload: BudgetCategoryPatch):
     return update_category(request.auth, category_id, payload)
 

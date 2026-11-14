@@ -73,7 +73,7 @@ def test_cross_user_isolation(auth_client, other_auth_client):
 @pytest.mark.django_db
 def test_get_and_update_overtime_settings(auth_client):
     client, _ = auth_client
-    
+
     # Get defaults
     r = client.get("/api/v1/income/overtime/settings")
     assert r.status_code == 200
@@ -81,7 +81,7 @@ def test_get_and_update_overtime_settings(auth_client):
     assert res["hourly_base_rate"] == "0.00"
     assert res["overtime_multiplier"] == "1.50"
     assert res["estimated_tax_rate"] == "0.25"
-    
+
     # Update settings
     r2 = client.patch(
         "/api/v1/income/overtime/settings",
@@ -97,7 +97,7 @@ def test_get_and_update_overtime_settings(auth_client):
     assert res2["hourly_base_rate"] == "40.00"
     assert res2["overtime_multiplier"] == "1.50"
     assert res2["estimated_tax_rate"] == "0.20"
-    
+
     # Verify via get
     r3 = client.get("/api/v1/income/overtime/settings")
     assert r3.json()["hourly_base_rate"] == "40.00"
@@ -106,7 +106,7 @@ def test_get_and_update_overtime_settings(auth_client):
 @pytest.mark.django_db
 def test_overtime_projections_goal(auth_client):
     client, _ = auth_client
-    
+
     # Configure settings
     client.patch(
         "/api/v1/income/overtime/settings",
@@ -117,7 +117,7 @@ def test_overtime_projections_goal(auth_client):
         },
         content_type="application/json",
     )
-    
+
     # Create goal (1200 target, 0 current)
     g = client.post(
         "/api/v1/goals",
@@ -130,7 +130,7 @@ def test_overtime_projections_goal(auth_client):
         },
         content_type="application/json",
     ).json()
-    
+
     # Get projections
     r = client.post(
         "/api/v1/income/overtime/projections",
@@ -143,7 +143,7 @@ def test_overtime_projections_goal(auth_client):
     )
     assert r.status_code == 200
     res = r.json()
-    
+
     # Math check:
     # net_hourly = 50 * 1.5 * 0.8 = 60.00
     # weekly = 60 * 10 = 600.00
@@ -165,7 +165,7 @@ def test_overtime_projections_goal(auth_client):
 @pytest.mark.django_db
 def test_overtime_projections_subgoal(auth_client):
     client, _ = auth_client
-    
+
     # Configure settings
     client.patch(
         "/api/v1/income/overtime/settings",
@@ -176,7 +176,7 @@ def test_overtime_projections_subgoal(auth_client):
         },
         content_type="application/json",
     )
-    
+
     # Create goal (1000 target, 0 current)
     g = client.post(
         "/api/v1/goals",
@@ -189,7 +189,7 @@ def test_overtime_projections_subgoal(auth_client):
         },
         content_type="application/json",
     ).json()
-    
+
     # Create subgoal (remaining is 500)
     subg = client.post(
         f"/api/v1/goals/{g['id']}/subgoals",
@@ -200,7 +200,7 @@ def test_overtime_projections_subgoal(auth_client):
         },
         content_type="application/json",
     ).json()
-    
+
     r = client.post(
         "/api/v1/income/overtime/projections",
         data={
@@ -212,7 +212,7 @@ def test_overtime_projections_subgoal(auth_client):
     )
     assert r.status_code == 200
     res = r.json()
-    
+
     # remaining = 600 - 100 = 500
     # hours needed = 500 / 60 = 8.33
     # standard months = 500 / 100 = 5.00
@@ -228,7 +228,7 @@ def test_overtime_projections_subgoal(auth_client):
 def test_overtime_cross_user_isolation_security(auth_client, other_auth_client):
     a, _ = auth_client
     b, _ = other_auth_client
-    
+
     # Create goal under user A
     g = a.post(
         "/api/v1/goals",
@@ -241,14 +241,14 @@ def test_overtime_cross_user_isolation_security(auth_client, other_auth_client):
         },
         content_type="application/json",
     ).json()
-    
+
     # A's settings update
     a.patch(
         "/api/v1/income/overtime/settings",
         data={"hourly_base_rate": "50.00"},
         content_type="application/json",
     )
-    
+
     # User B tries to fetch projections on User A's goal
     r = b.post(
         "/api/v1/income/overtime/projections",

@@ -17,9 +17,9 @@ def dashboard_summary(user) -> dict:
     categories = list_categories(user)
 
     return {
-        "total_balance":        _sum(accounts, "balance"),
-        "goals_total_target":   _sum(goals, "target_amount"),
-        "goals_total_current":  _sum(goals, "current_amount"),
-        "budgets_total_limit":  _sum(categories, "limit_amount"),
-        "budgets_total_spent":  _sum(categories, "spent_amount"),
+        "total_balance": _sum(accounts, "balance"),
+        "goals_total_target": _sum(goals, "target_amount"),
+        "goals_total_current": _sum(goals, "current_amount"),
+        "budgets_total_limit": _sum(categories, "limit_amount"),
+        "budgets_total_spent": _sum(categories, "spent_amount"),
     }

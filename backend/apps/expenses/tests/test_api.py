@@ -46,12 +46,16 @@ def test_list_expenses_returns_only_own(auth_client, other_auth_client):
         content_type="application/json",
     ).json()
 
-    a_client.post("/api/v1/expenses",
-                  data={"budget_category_id": a_cat["id"], "amount": "10.00", "date": str(date.today())},
-                  content_type="application/json")
-    b_client.post("/api/v1/expenses",
-                  data={"budget_category_id": b_cat["id"], "amount": "20.00", "date": str(date.today())},
-                  content_type="application/json")
+    a_client.post(
+        "/api/v1/expenses",
+        data={"budget_category_id": a_cat["id"], "amount": "10.00", "date": str(date.today())},
+        content_type="application/json",
+    )
+    b_client.post(
+        "/api/v1/expenses",
+        data={"budget_category_id": b_cat["id"], "amount": "20.00", "date": str(date.today())},
+        content_type="application/json",
+    )
 
     r = a_client.get("/api/v1/expenses")
     assert r.status_code == 200
@@ -83,9 +87,11 @@ def test_cross_user_expense_returns_404(auth_client, other_auth_client):
 def test_list_filter_by_account_id(auth_client):
     client, user = auth_client
 
-    acc = client.post("/api/v1/accounts",
-                      data={"name": "Checking", "balance": "500.00"},
-                      content_type="application/json").json()
+    acc = client.post(
+        "/api/v1/accounts",
+        data={"name": "Checking", "balance": "500.00"},
+        content_type="application/json",
+    ).json()
     cat = client.post(
         "/api/v1/budget/categories",
         data={"name": "Food", "limit_amount": "200.00", "category_type": "expense"},
@@ -93,14 +99,22 @@ def test_list_filter_by_account_id(auth_client):
     ).json()
 
     # Expense linked to account
-    client.post("/api/v1/expenses",
-                data={"budget_category_id": cat["id"], "account_id": acc["id"],
-                      "amount": "30.00", "date": str(date.today())},
-                content_type="application/json")
+    client.post(
+        "/api/v1/expenses",
+        data={
+            "budget_category_id": cat["id"],
+            "account_id": acc["id"],
+            "amount": "30.00",
+            "date": str(date.today()),
+        },
+        content_type="application/json",
+    )
     # Expense NOT linked to account
-    client.post("/api/v1/expenses",
-                data={"budget_category_id": cat["id"], "amount": "15.00", "date": str(date.today())},
-                content_type="application/json")
+    client.post(
+        "/api/v1/expenses",
+        data={"budget_category_id": cat["id"], "amount": "15.00", "date": str(date.today())},
+        content_type="application/json",
+    )
 
     r = client.get(f"/api/v1/expenses?account_id={acc['id']}")
     assert r.status_code == 200
@@ -133,18 +147,26 @@ def test_delete_expense(auth_client):
 @pytest.mark.django_db
 def test_list_expenses_filters_by_budget_category(auth_client):
     client, _ = auth_client
-    cat1 = client.post("/api/v1/budget/categories",
+    cat1 = client.post(
+        "/api/v1/budget/categories",
         data={"name": "A", "limit_amount": "100.00", "category_type": "expense"},
-        content_type="application/json").json()
-    cat2 = client.post("/api/v1/budget/categories",
+        content_type="application/json",
+    ).json()
+    cat2 = client.post(
+        "/api/v1/budget/categories",
         data={"name": "B", "limit_amount": "100.00", "category_type": "expense"},
-        content_type="application/json").json()
-    client.post("/api/v1/expenses",
+        content_type="application/json",
+    ).json()
+    client.post(
+        "/api/v1/expenses",
         data={"budget_category_id": cat1["id"], "amount": "10.00", "date": "2026-05-17"},
-        content_type="application/json")
-    client.post("/api/v1/expenses",
+        content_type="application/json",
+    )
+    client.post(
+        "/api/v1/expenses",
         data={"budget_category_id": cat2["id"], "amount": "20.00", "date": "2026-05-17"},
-        content_type="application/json")
+        content_type="application/json",
+    )
     r = client.get(f"/api/v1/expenses?budget_category_id={cat1['id']}")
     assert r.status_code == 200
     assert len(r.json()) == 1
@@ -154,4 +176,5 @@ def test_list_expenses_filters_by_budget_category(auth_client):
 @pytest.mark.django_db
 def test_requires_auth():
     from django.test import Client
+
     assert Client().get("/api/v1/expenses").status_code == 401

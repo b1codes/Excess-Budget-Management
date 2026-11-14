@@ -19,21 +19,29 @@ def gather_context(user) -> dict:
     goals = []
     for g in list_goals(user):
         subgoals = list_subgoals(user, g.id)
-        goals.append({
-            "id": str(g.id),
-            "name": g.name,
-            "category": g.category,
-            "type": g.type,
-            "target_amount": float(g.target_amount),
-            "current_amount": float(g.current_amount),
-            "target_date": g.target_date.isoformat() if g.target_date else None,
-            "sub_goals": [
-                {"name": s.name, "target": float(s.target_amount), "current": float(s.current_amount)}
-                for s in subgoals
-            ],
-        })
+        goals.append(
+            {
+                "id": str(g.id),
+                "name": g.name,
+                "category": g.category,
+                "type": g.type,
+                "target_amount": float(g.target_amount),
+                "current_amount": float(g.current_amount),
+                "target_date": g.target_date.isoformat() if g.target_date else None,
+                "sub_goals": [
+                    {
+                        "name": s.name,
+                        "target": float(s.target_amount),
+                        "current": float(s.current_amount),
+                    }
+                    for s in subgoals
+                ],
+            }
+        )
 
-    accounts = [{"id": str(a.id), "name": a.name, "balance": float(a.balance)} for a in list_accounts(user)]
+    accounts = [
+        {"id": str(a.id), "name": a.name, "balance": float(a.balance)} for a in list_accounts(user)
+    ]
 
     return {
         "goals": goals,
@@ -81,11 +89,13 @@ def generate(user, excess: Decimal) -> dict:
     result = call_gemini(prompt)
 
     suggestion_id = uuid.uuid4()
-    get_client().collection(COLLECTION).document(str(suggestion_id)).set({
-        "user_id": str(user.id),
-        "excess_funds": to_cents(excess),
-        "response_json": result,
-        "created_at": datetime.now(timezone.utc),
-    })
+    get_client().collection(COLLECTION).document(str(suggestion_id)).set(
+        {
+            "user_id": str(user.id),
+            "excess_funds": to_cents(excess),
+            "response_json": result,
+            "created_at": datetime.now(timezone.utc),
+        }
+    )
 
     return result

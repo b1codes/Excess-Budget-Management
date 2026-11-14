@@ -27,7 +27,10 @@ def test_apply_expense_effects_on_create_debits_balance_and_credits_spent():
     )
 
     assert get_client().collection("accounts").document("acc1").get().get("balance") == 7000
-    assert get_client().collection("budget_categories").document("cat1").get().get("spent_amount") == 3000
+    assert (
+        get_client().collection("budget_categories").document("cat1").get().get("spent_amount")
+        == 3000
+    )
 
 
 def test_apply_expense_effects_against_income_category_flips_sign():
@@ -37,7 +40,10 @@ def test_apply_expense_effects_against_income_category_flips_sign():
         old=None, new={"account_id": None, "budget_category_id": "cat1", "amount_cents": 5000}
     )
 
-    assert get_client().collection("budget_categories").document("cat1").get().get("spent_amount") == -5000
+    assert (
+        get_client().collection("budget_categories").document("cat1").get().get("spent_amount")
+        == -5000
+    )
 
 
 def test_apply_expense_effects_on_delete_reverses():
@@ -49,7 +55,9 @@ def test_apply_expense_effects_on_delete_reverses():
     )
 
     assert get_client().collection("accounts").document("acc1").get().get("balance") == 10000
-    assert get_client().collection("budget_categories").document("cat1").get().get("spent_amount") == 0
+    assert (
+        get_client().collection("budget_categories").document("cat1").get().get("spent_amount") == 0
+    )
 
 
 def test_apply_expense_effects_on_update_reverses_old_and_applies_new():
@@ -62,7 +70,10 @@ def test_apply_expense_effects_on_update_reverses_old_and_applies_new():
     )
 
     assert get_client().collection("accounts").document("acc1").get().get("balance") == 5000
-    assert get_client().collection("budget_categories").document("cat1").get().get("spent_amount") == 5000
+    assert (
+        get_client().collection("budget_categories").document("cat1").get().get("spent_amount")
+        == 5000
+    )
 
 
 def test_apply_extra_income_effects_credits_balance_and_budget():
@@ -74,7 +85,10 @@ def test_apply_extra_income_effects_credits_balance_and_budget():
     )
 
     assert get_client().collection("accounts").document("acc1").get().get("balance") == 15000
-    assert get_client().collection("budget_categories").document("cat1").get().get("spent_amount") == 5000
+    assert (
+        get_client().collection("budget_categories").document("cat1").get().get("spent_amount")
+        == 5000
+    )
 
 
 def test_recompute_subgoal_parent_sums_siblings():
@@ -94,7 +108,9 @@ def test_recompute_subgoal_parent_sums_siblings():
 
 
 def test_recompute_subgoal_parent_noop_when_no_subgoals():
-    get_client().collection("goals").document("g2").set({"target_amount": 999, "current_amount": 999})
+    get_client().collection("goals").document("g2").set(
+        {"target_amount": 999, "current_amount": 999}
+    )
 
     recompute_subgoal_parent("g2")
 
@@ -106,8 +122,12 @@ def test_recompute_goal_from_accounts_sums_linked_balances():
     get_client().collection("goals").document("g1").set({"current_amount": 0})
     _seed_account("a1", 30000)
     _seed_account("a2", 40000)
-    get_client().collection("goal_accounts").document("g1_a1").set({"goal_id": "g1", "account_id": "a1"})
-    get_client().collection("goal_accounts").document("g1_a2").set({"goal_id": "g1", "account_id": "a2"})
+    get_client().collection("goal_accounts").document("g1_a1").set(
+        {"goal_id": "g1", "account_id": "a1"}
+    )
+    get_client().collection("goal_accounts").document("g1_a2").set(
+        {"goal_id": "g1", "account_id": "a2"}
+    )
 
     recompute_goal_from_accounts("g1")
 
@@ -119,7 +139,8 @@ def test_apply_allocation_effects_debits_account_credits_goal():
     get_client().collection("goals").document("g1").set({"current_amount": 0})
 
     apply_allocation_effects(
-        old=None, new={"account_id": "acc1", "goal_id": "g1", "sub_goal_id": None, "amount_cents": 20000}
+        old=None,
+        new={"account_id": "acc1", "goal_id": "g1", "sub_goal_id": None, "amount_cents": 20000},
     )
 
     assert get_client().collection("accounts").document("acc1").get().get("balance") == 30000
@@ -127,13 +148,16 @@ def test_apply_allocation_effects_debits_account_credits_goal():
 
 
 def test_apply_allocation_effects_credits_subgoal_and_rolls_up_to_parent():
-    get_client().collection("goals").document("g1").set({"target_amount": 50000, "current_amount": 0})
+    get_client().collection("goals").document("g1").set(
+        {"target_amount": 50000, "current_amount": 0}
+    )
     get_client().collection("sub_goals").document("s1").set(
         {"goal_id": "g1", "target_amount": 50000, "current_amount": 0}
     )
 
     apply_allocation_effects(
-        old=None, new={"account_id": None, "goal_id": "g1", "sub_goal_id": "s1", "amount_cents": 10000}
+        old=None,
+        new={"account_id": None, "goal_id": "g1", "sub_goal_id": "s1", "amount_cents": 10000},
     )
 
     assert get_client().collection("sub_goals").document("s1").get().get("current_amount") == 10000
@@ -145,7 +169,8 @@ def test_apply_allocation_effects_on_delete_reverses():
     get_client().collection("goals").document("g1").set({"current_amount": 20000})
 
     apply_allocation_effects(
-        old={"account_id": "acc1", "goal_id": "g1", "sub_goal_id": None, "amount_cents": 20000}, new=None
+        old={"account_id": "acc1", "goal_id": "g1", "sub_goal_id": None, "amount_cents": 20000},
+        new=None,
     )
 
     assert get_client().collection("accounts").document("acc1").get().get("balance") == 50000
