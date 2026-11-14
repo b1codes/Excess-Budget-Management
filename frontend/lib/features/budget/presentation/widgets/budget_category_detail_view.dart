@@ -250,7 +250,9 @@ class BudgetCategoryDetailView extends StatelessWidget {
                   width: (MediaQuery.of(context).size.width - 96) * percent,
                   decoration: BoxDecoration(
                     color: category.type == BudgetCategoryType.income
-                        ? (percent >= 1.0 ? Theme.of(context).colorScheme.tertiary : color)
+                        ? (percent >= 1.0
+                              ? Theme.of(context).colorScheme.tertiary
+                              : color)
                         : (percent >= 1.0
                               ? Theme.of(context).colorScheme.error
                               : color),

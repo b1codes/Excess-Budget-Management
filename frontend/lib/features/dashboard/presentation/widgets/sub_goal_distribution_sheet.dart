@@ -92,9 +92,9 @@ class _SubGoalDistributionSheetState extends State<SubGoalDistributionSheet> {
             children: [
               Text(
                 'Distribute Funds',
-                style: Theme.of(
-                  context,
-                ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -127,11 +127,14 @@ class _SubGoalDistributionSheetState extends State<SubGoalDistributionSheet> {
                           decoration: const InputDecoration(prefixText: '\$'),
                           onChanged: (val) {
                             setState(() {
-                              _distribution[sg.id] = double.tryParse(val) ?? 0.0;
+                              _distribution[sg.id] =
+                                  double.tryParse(val) ?? 0.0;
                               _remaining =
                                   widget.amount -
                                   (_distribution.values.isNotEmpty
-                                      ? _distribution.values.reduce((a, b) => a + b)
+                                      ? _distribution.values.reduce(
+                                          (a, b) => a + b,
+                                        )
                                       : 0.0);
                             });
                           },

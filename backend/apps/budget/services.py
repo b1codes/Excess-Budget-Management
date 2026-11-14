@@ -26,30 +26,41 @@ def _from_doc(snapshot) -> BudgetCategory:
 
 
 def list_categories(user):
-    docs = get_client().collection(COLLECTION).where(
-        "user_id", "==", str(user.id)
-    ).order_by("created_at").stream()
+    docs = (
+        get_client()
+        .collection(COLLECTION)
+        .where("user_id", "==", str(user.id))
+        .order_by("created_at")
+        .stream()
+    )
     return [_from_doc(d) for d in docs]
 
 
 def create_category(user, payload) -> BudgetCategory:
     category_id = uuid.uuid4()
     now = datetime.now(timezone.utc)
-    get_client().collection(COLLECTION).document(str(category_id)).set({
-        "user_id": str(user.id),
-        "name": payload.name,
-        "limit_amount": to_cents(payload.limit_amount),
-        "spent_amount": 0,
-        "icon_code": payload.icon_code,
-        "color_hex": payload.color_hex,
-        "category_type": payload.category_type,
-        "created_at": now,
-    })
+    get_client().collection(COLLECTION).document(str(category_id)).set(
+        {
+            "user_id": str(user.id),
+            "name": payload.name,
+            "limit_amount": to_cents(payload.limit_amount),
+            "spent_amount": 0,
+            "icon_code": payload.icon_code,
+            "color_hex": payload.color_hex,
+            "category_type": payload.category_type,
+            "created_at": now,
+        }
+    )
     return BudgetCategory(
-        id=category_id, user_id=str(user.id), name=payload.name,
-        limit_amount=payload.limit_amount, spent_amount=Decimal("0.00"),
-        icon_code=payload.icon_code, color_hex=payload.color_hex,
-        category_type=payload.category_type, created_at=now,
+        id=category_id,
+        user_id=str(user.id),
+        name=payload.name,
+        limit_amount=payload.limit_amount,
+        spent_amount=Decimal("0.00"),
+        icon_code=payload.icon_code,
+        color_hex=payload.color_hex,
+        category_type=payload.category_type,
+        created_at=now,
     )
 
 
@@ -87,7 +98,9 @@ def delete_category(user, category_id) -> None:
     # any debited account balance. (Updating this category's own spent_amount
     # along the way is wasted work since the category doc is deleted right
     # after, but harmless.)
-    for expense in client.collection("expenses").where("budget_category_id", "==", str(category_id)).stream():
+    for expense in (
+        client.collection("expenses").where("budget_category_id", "==", str(category_id)).stream()
+    ):
         data = expense.to_dict()
         apply_expense_effects(
             old={
@@ -100,10 +113,16 @@ def delete_category(user, category_id) -> None:
 
     batch = client.batch()
     batch.delete(client.collection(COLLECTION).document(str(category_id)))
-    for expense in client.collection("expenses").where("budget_category_id", "==", str(category_id)).stream():
+    for expense in (
+        client.collection("expenses").where("budget_category_id", "==", str(category_id)).stream()
+    ):
         batch.delete(expense.reference)
     # Mirrors on_delete=SET_NULL for ExtraIncome.budget_category: keeps existing,
     # just loses the category link.
-    for extra in client.collection("extra_income").where("budget_category_id", "==", str(category_id)).stream():
+    for extra in (
+        client.collection("extra_income")
+        .where("budget_category_id", "==", str(category_id))
+        .stream()
+    ):
         batch.update(extra.reference, {"budget_category_id": None})
     batch.commit()

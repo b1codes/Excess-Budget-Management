@@ -114,6 +114,36 @@ the emulator runs fully offline against the dummy project ID in `.env.example`.
 
 Run `make logs-firestore` to tail the emulator's logs.
 
+## 🧪 Testing & CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every pull request, on pushes
+to `main`, and on demand. Each area has its own job, and each one has a matching
+`make` target so you can run the same check locally:
+
+| CI job | What it checks | Run locally |
+| --- | --- | --- |
+| Backend · lint | `ruff check` + `ruff format --check` | `make lint format-check` |
+| Backend · tests + coverage | pytest against the Firestore emulator, coverage gate | `make test-cov` (after `make up`) |
+| Frontend | `dart format`, `flutter analyze`, tests, coverage gate | `make fe-check fe-test-cov` |
+| Widgetbook | generated catalog is current, format, analyze, use-case smoke tests | `make wb-check` |
+| Infra | `terraform fmt -check` + `terraform validate` (no AWS credentials) | `make tf-check` |
+
+`make ci` runs all of them in sequence.
+
+**Coverage gates.** Both gates start just below the current baseline and only go up:
+
+- Backend: `fail_under` in `[tool.coverage.report]` in `backend/pyproject.toml`
+  (branch coverage over `apps/` and `config/`, excluding tests and migrations).
+- Frontend: `MIN_COVERAGE` in `frontend/tool/coverage.sh` (line coverage over
+  `lib/`, excluding generated `*.g.dart`). The script imports every library before
+  measuring, so files without tests count as 0% instead of being skipped.
+
+When a change raises coverage, raise the gate in the same PR.
+
+**Flutter version.** `frontend/.fvmrc` pins the Flutter SDK, and CI reads it. With
+[fvm](https://fvm.app) installed, the `make` targets use it automatically; otherwise
+they fall back to whatever `flutter` is on your `PATH`.
+
 ---
 
 ## 🗺️ Roadmap

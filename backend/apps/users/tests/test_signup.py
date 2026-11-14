@@ -2,6 +2,7 @@ import pytest
 from django.test import Client
 from apps.users.models import User
 
+
 @pytest.mark.django_db
 def test_signup_creates_user_and_returns_tokens():
     client = Client()
@@ -17,6 +18,7 @@ def test_signup_creates_user_and_returns_tokens():
     assert body["refresh"]
     assert User.objects.filter(email="a@b.co").count() == 1
 
+
 @pytest.mark.django_db
 def test_signup_rejects_duplicate_email():
     User.objects.create_user(email="a@b.co", password="x" * 12)
@@ -29,6 +31,7 @@ def test_signup_rejects_duplicate_email():
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "conflict"
 
+
 @pytest.mark.django_db
 def test_signup_rejects_short_password():
     client = Client()
@@ -38,6 +41,7 @@ def test_signup_rejects_short_password():
         content_type="application/json",
     )
     assert response.status_code == 422
+
 
 @pytest.mark.django_db
 def test_signup_is_atomic_user_not_created_if_profile_fails(monkeypatch):

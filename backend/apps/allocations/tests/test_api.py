@@ -7,8 +7,12 @@ def test_create_allocation_goal_only(auth_client):
     client, _ = auth_client
     goal = client.post(
         "/api/v1/goals",
-        data={"name": "Emergency Fund", "target_amount": "1000.00",
-              "type": "long_term", "category": "savings"},
+        data={
+            "name": "Emergency Fund",
+            "target_amount": "1000.00",
+            "type": "long_term",
+            "category": "savings",
+        },
         content_type="application/json",
     ).json()
 
@@ -35,8 +39,12 @@ def test_create_allocation_debits_account(auth_client):
     ).json()
     goal = client.post(
         "/api/v1/goals",
-        data={"name": "Vacation", "target_amount": "2000.00",
-              "type": "short_term", "category": "purchase"},
+        data={
+            "name": "Vacation",
+            "target_amount": "2000.00",
+            "type": "short_term",
+            "category": "purchase",
+        },
         content_type="application/json",
     ).json()
 
@@ -57,17 +65,25 @@ def test_list_allocations(auth_client):
     client, _ = auth_client
     goal = client.post(
         "/api/v1/goals",
-        data={"name": "Savings", "target_amount": "500.00",
-              "type": "long_term", "category": "savings"},
+        data={
+            "name": "Savings",
+            "target_amount": "500.00",
+            "type": "long_term",
+            "category": "savings",
+        },
         content_type="application/json",
     ).json()
 
-    client.post("/api/v1/allocations",
-                data={"goal_id": goal["id"], "amount": "50.00"},
-                content_type="application/json")
-    client.post("/api/v1/allocations",
-                data={"goal_id": goal["id"], "amount": "75.00"},
-                content_type="application/json")
+    client.post(
+        "/api/v1/allocations",
+        data={"goal_id": goal["id"], "amount": "50.00"},
+        content_type="application/json",
+    )
+    client.post(
+        "/api/v1/allocations",
+        data={"goal_id": goal["id"], "amount": "75.00"},
+        content_type="application/json",
+    )
 
     r = client.get("/api/v1/allocations")
     assert r.status_code == 200
@@ -79,23 +95,25 @@ def test_list_filter_by_goal(auth_client):
     client, _ = auth_client
     g1 = client.post(
         "/api/v1/goals",
-        data={"name": "G1", "target_amount": "100.00",
-              "type": "long_term", "category": "savings"},
+        data={"name": "G1", "target_amount": "100.00", "type": "long_term", "category": "savings"},
         content_type="application/json",
     ).json()
     g2 = client.post(
         "/api/v1/goals",
-        data={"name": "G2", "target_amount": "200.00",
-              "type": "long_term", "category": "savings"},
+        data={"name": "G2", "target_amount": "200.00", "type": "long_term", "category": "savings"},
         content_type="application/json",
     ).json()
 
-    client.post("/api/v1/allocations",
-                data={"goal_id": g1["id"], "amount": "10.00"},
-                content_type="application/json")
-    client.post("/api/v1/allocations",
-                data={"goal_id": g2["id"], "amount": "20.00"},
-                content_type="application/json")
+    client.post(
+        "/api/v1/allocations",
+        data={"goal_id": g1["id"], "amount": "10.00"},
+        content_type="application/json",
+    )
+    client.post(
+        "/api/v1/allocations",
+        data={"goal_id": g2["id"], "amount": "20.00"},
+        content_type="application/json",
+    )
 
     r = client.get(f"/api/v1/allocations?goal_id={g1['id']}")
     assert r.status_code == 200
@@ -109,8 +127,12 @@ def test_delete_allocation(auth_client):
     client, _ = auth_client
     goal = client.post(
         "/api/v1/goals",
-        data={"name": "Fund", "target_amount": "1000.00",
-              "type": "long_term", "category": "savings"},
+        data={
+            "name": "Fund",
+            "target_amount": "1000.00",
+            "type": "long_term",
+            "category": "savings",
+        },
         content_type="application/json",
     ).json()
     allocation = client.post(
@@ -133,8 +155,12 @@ def test_cross_user_allocation_returns_404(auth_client, other_auth_client):
 
     goal = a_client.post(
         "/api/v1/goals",
-        data={"name": "Secret", "target_amount": "999.00",
-              "type": "long_term", "category": "savings"},
+        data={
+            "name": "Secret",
+            "target_amount": "999.00",
+            "type": "long_term",
+            "category": "savings",
+        },
         content_type="application/json",
     ).json()
     allocation = a_client.post(
@@ -152,26 +178,40 @@ def test_allocation_summary(auth_client):
     client, _ = auth_client
     savings_goal = client.post(
         "/api/v1/goals",
-        data={"name": "Emergency", "target_amount": "1000.00",
-              "type": "long_term", "category": "savings"},
+        data={
+            "name": "Emergency",
+            "target_amount": "1000.00",
+            "type": "long_term",
+            "category": "savings",
+        },
         content_type="application/json",
     ).json()
     purchase_goal = client.post(
         "/api/v1/goals",
-        data={"name": "Laptop", "target_amount": "2000.00",
-              "type": "short_term", "category": "purchase"},
+        data={
+            "name": "Laptop",
+            "target_amount": "2000.00",
+            "type": "short_term",
+            "category": "purchase",
+        },
         content_type="application/json",
     ).json()
 
-    client.post("/api/v1/allocations",
-                data={"goal_id": savings_goal["id"], "amount": "100.00"},
-                content_type="application/json")
-    client.post("/api/v1/allocations",
-                data={"goal_id": savings_goal["id"], "amount": "50.00"},
-                content_type="application/json")
-    client.post("/api/v1/allocations",
-                data={"goal_id": purchase_goal["id"], "amount": "200.00"},
-                content_type="application/json")
+    client.post(
+        "/api/v1/allocations",
+        data={"goal_id": savings_goal["id"], "amount": "100.00"},
+        content_type="application/json",
+    )
+    client.post(
+        "/api/v1/allocations",
+        data={"goal_id": savings_goal["id"], "amount": "50.00"},
+        content_type="application/json",
+    )
+    client.post(
+        "/api/v1/allocations",
+        data={"goal_id": purchase_goal["id"], "amount": "200.00"},
+        content_type="application/json",
+    )
 
     r = client.get("/api/v1/allocations/summary?days=30")
     assert r.status_code == 200, r.content
@@ -183,20 +223,30 @@ def test_allocation_summary(auth_client):
 @pytest.mark.django_db
 def test_requires_auth():
     from django.test import Client
+
     assert Client().get("/api/v1/allocations").status_code == 401
 
 
 @pytest.mark.django_db
 def test_create_allocation_rejects_mismatched_subgoal(auth_client):
     client, user = auth_client
-    g1 = client.post("/api/v1/goals", data={"name": "g1", "type": "short_term"}, content_type="application/json").json()
-    g2 = client.post("/api/v1/goals", data={"name": "g2", "type": "short_term"}, content_type="application/json").json()
-    sub = client.post(f"/api/v1/goals/{g1['id']}/subgoals",
-                      data={"name": "s", "target_amount": "100.00"}, content_type="application/json").json()
+    g1 = client.post(
+        "/api/v1/goals", data={"name": "g1", "type": "short_term"}, content_type="application/json"
+    ).json()
+    g2 = client.post(
+        "/api/v1/goals", data={"name": "g2", "type": "short_term"}, content_type="application/json"
+    ).json()
+    sub = client.post(
+        f"/api/v1/goals/{g1['id']}/subgoals",
+        data={"name": "s", "target_amount": "100.00"},
+        content_type="application/json",
+    ).json()
 
-    r = client.post("/api/v1/allocations",
-                    data={"goal_id": g2["id"], "sub_goal_id": sub["id"], "amount": "10.00"},
-                    content_type="application/json")
+    r = client.post(
+        "/api/v1/allocations",
+        data={"goal_id": g2["id"], "sub_goal_id": sub["id"], "amount": "10.00"},
+        content_type="application/json",
+    )
 
     assert r.status_code == 400
     assert r.json()["error"]["code"] == "subgoal_goal_mismatch"

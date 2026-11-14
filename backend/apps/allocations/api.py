@@ -13,7 +13,9 @@ from .services import (
 router = Router(tags=["allocations"], auth=JWTAuth())
 
 
-@router.get("/summary", response=AllocationSummaryOut, summary="Recent allocation totals by category")
+@router.get(
+    "/summary", response=AllocationSummaryOut, summary="Recent allocation totals by category"
+)
 def summary(request, days: int = 30):
     return recent_allocation_summary(request.auth, days=days)
 

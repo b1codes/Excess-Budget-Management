@@ -16,6 +16,7 @@ OVERTIME_COLLECTION = "overtime_settings"
 
 # ── IncomeSource ──────────────────────────────────────────────────────────────
 
+
 def _source_from_doc(snapshot) -> IncomeSource:
     data = snapshot.to_dict()
     return IncomeSource(
@@ -29,25 +30,36 @@ def _source_from_doc(snapshot) -> IncomeSource:
 
 
 def list_sources(user):
-    docs = get_client().collection(SOURCES_COLLECTION).where(
-        "user_id", "==", str(user.id)
-    ).order_by("created_at").stream()
+    docs = (
+        get_client()
+        .collection(SOURCES_COLLECTION)
+        .where("user_id", "==", str(user.id))
+        .order_by("created_at")
+        .stream()
+    )
     return [_source_from_doc(d) for d in docs]
 
 
 def create_source(user, payload) -> IncomeSource:
     source_id = uuid.uuid4()
     now = datetime.now(timezone.utc)
-    get_client().collection(SOURCES_COLLECTION).document(str(source_id)).set({
-        "user_id": str(user.id),
-        "name": payload.name,
-        "expected_amount": to_cents(payload.expected_amount),
-        "frequency": payload.frequency,
-        "created_at": now,
-    })
-    return IncomeSource(id=source_id, user_id=str(user.id), name=payload.name,
-                        expected_amount=payload.expected_amount, frequency=payload.frequency,
-                        created_at=now)
+    get_client().collection(SOURCES_COLLECTION).document(str(source_id)).set(
+        {
+            "user_id": str(user.id),
+            "name": payload.name,
+            "expected_amount": to_cents(payload.expected_amount),
+            "frequency": payload.frequency,
+            "created_at": now,
+        }
+    )
+    return IncomeSource(
+        id=source_id,
+        user_id=str(user.id),
+        name=payload.name,
+        expected_amount=payload.expected_amount,
+        frequency=payload.frequency,
+        created_at=now,
+    )
 
 
 def get_source(user, source_id) -> IncomeSource:
@@ -77,6 +89,7 @@ def delete_source(user, source_id) -> None:
 
 # ── ExtraIncome ───────────────────────────────────────────────────────────────
 
+
 def _extra_from_doc(snapshot) -> ExtraIncome:
     data = snapshot.to_dict()
     return ExtraIncome(
@@ -86,7 +99,9 @@ def _extra_from_doc(snapshot) -> ExtraIncome:
         description=data["description"],
         date_received=date.fromisoformat(data["date_received"]),
         account_id=uuid.UUID(data["account_id"]) if data.get("account_id") else None,
-        budget_category_id=uuid.UUID(data["budget_category_id"]) if data.get("budget_category_id") else None,
+        budget_category_id=uuid.UUID(data["budget_category_id"])
+        if data.get("budget_category_id")
+        else None,
         created_at=data["created_at"],
     )
 
@@ -97,9 +112,9 @@ def list_extra(user, account_id=None, budget_category_id=None):
         query = query.where("account_id", "==", str(account_id))
     if budget_category_id:
         query = query.where("budget_category_id", "==", str(budget_category_id))
-    query = query.order_by(
-        "date_received", direction=firestore.Query.DESCENDING
-    ).order_by("created_at", direction=firestore.Query.DESCENDING)
+    query = query.order_by("date_received", direction=firestore.Query.DESCENDING).order_by(
+        "created_at", direction=firestore.Query.DESCENDING
+    )
     return [_extra_from_doc(d) for d in query.stream()]
 
 
@@ -117,25 +132,36 @@ def create_extra(user, payload) -> ExtraIncome:
     extra_id = uuid.uuid4()
     now = datetime.now(timezone.utc)
     amount_cents = to_cents(payload.amount)
-    get_client().collection(EXTRA_COLLECTION).document(str(extra_id)).set({
-        "user_id": str(user.id),
-        "amount": amount_cents,
-        "description": payload.description,
-        "date_received": payload.date_received.isoformat(),
-        "account_id": account_id,
-        "budget_category_id": budget_category_id,
-        "created_at": now,
-    })
+    get_client().collection(EXTRA_COLLECTION).document(str(extra_id)).set(
+        {
+            "user_id": str(user.id),
+            "amount": amount_cents,
+            "description": payload.description,
+            "date_received": payload.date_received.isoformat(),
+            "account_id": account_id,
+            "budget_category_id": budget_category_id,
+            "created_at": now,
+        }
+    )
 
     apply_extra_income_effects(
         old=None,
-        new={"account_id": account_id, "budget_category_id": budget_category_id, "amount_cents": amount_cents},
+        new={
+            "account_id": account_id,
+            "budget_category_id": budget_category_id,
+            "amount_cents": amount_cents,
+        },
     )
 
     return ExtraIncome(
-        id=extra_id, user_id=str(user.id), amount=payload.amount, description=payload.description,
+        id=extra_id,
+        user_id=str(user.id),
+        amount=payload.amount,
+        description=payload.description,
         date_received=payload.date_received,
-        account_id=payload.account_id, budget_category_id=payload.budget_category_id, created_at=now,
+        account_id=payload.account_id,
+        budget_category_id=payload.budget_category_id,
+        created_at=now,
     )
 
 
@@ -206,6 +232,7 @@ def delete_extra(user, extra_id) -> None:
 
 # ── Overtime Settings & Calculations ──────────────────────────────────────────
 
+
 def _overtime_from_doc(snapshot, user_id: str) -> OvertimeSettings:
     data = snapshot.to_dict()
     return OvertimeSettings(
@@ -223,13 +250,15 @@ def get_overtime_settings(user) -> OvertimeSettings:
     snapshot = doc_ref.get()
     if not snapshot.exists:
         now = datetime.now(timezone.utc)
-        doc_ref.set({
-            "hourly_base_rate": to_cents(Decimal("0.00")),
-            "overtime_multiplier": to_cents(Decimal("1.50")),
-            "estimated_tax_rate": to_cents(Decimal("0.25")),
-            "created_at": now,
-            "updated_at": now,
-        })
+        doc_ref.set(
+            {
+                "hourly_base_rate": to_cents(Decimal("0.00")),
+                "overtime_multiplier": to_cents(Decimal("1.50")),
+                "estimated_tax_rate": to_cents(Decimal("0.25")),
+                "created_at": now,
+                "updated_at": now,
+            }
+        )
         snapshot = doc_ref.get()
     return _overtime_from_doc(snapshot, str(user.id))
 
@@ -274,11 +303,14 @@ def calculate_overtime_projections(user, payload) -> dict:
     has_target = False
 
     if payload.subgoal_id:
-        subgoal = get_subgoal(user, payload.goal_id, payload.subgoal_id) if payload.goal_id else None
+        subgoal = (
+            get_subgoal(user, payload.goal_id, payload.subgoal_id) if payload.goal_id else None
+        )
         # subgoal_id can be supplied without goal_id in the request schema; resolve via a
         # direct ownership check when goal_id isn't given.
         if subgoal is None:
             from apps.goals.services import get_subgoal_by_id
+
             sg = get_subgoal_by_id(user, payload.subgoal_id)
             remaining_amount = sg.target_amount - sg.current_amount
         else:
@@ -302,9 +334,12 @@ def calculate_overtime_projections(user, payload) -> dict:
             total_monthly = std_contrib + monthly_overtime_net_income
             result["months_to_complete_with_overtime"] = round(remaining_amount / total_monthly, 2)
             result["months_saved"] = round(
-                result["months_to_complete_standard"] - result["months_to_complete_with_overtime"], 2
+                result["months_to_complete_standard"] - result["months_to_complete_with_overtime"],
+                2,
             )
         elif monthly_overtime_net_income > 0:
-            result["months_to_complete_with_overtime"] = round(remaining_amount / monthly_overtime_net_income, 2)
+            result["months_to_complete_with_overtime"] = round(
+                remaining_amount / monthly_overtime_net_income, 2
+            )
 
     return result

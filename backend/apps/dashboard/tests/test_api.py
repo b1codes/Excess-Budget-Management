@@ -16,8 +16,9 @@ def test_dashboard_summary_returns_aggregates(auth_client):
     create_account(user, AccountIn(name="Chk", balance=Decimal("100")))
     create_account(user, AccountIn(name="Sav", balance=Decimal("400")))
 
-    goal = create_goal(user, GoalIn(name="g", target_amount=Decimal("1000"),
-                                    type="long_term", category="savings"))
+    goal = create_goal(
+        user, GoalIn(name="g", target_amount=Decimal("1000"), type="long_term", category="savings")
+    )
     # current_amount isn't settable via GoalIn/GoalPatch (it's derived from linked
     # accounts via recompute_goal_from_accounts), so write it directly, matching
     # the direct-Firestore-write pattern already used in
@@ -26,8 +27,9 @@ def test_dashboard_summary_returns_aggregates(auth_client):
         {"current_amount": to_cents(Decimal("250"))}
     )
 
-    category = create_category(user, BudgetCategoryIn(name="Food", limit_amount=Decimal("500"),
-                                                       category_type="expense"))
+    category = create_category(
+        user, BudgetCategoryIn(name="Food", limit_amount=Decimal("500"), category_type="expense")
+    )
     # spent_amount is likewise not settable via BudgetCategoryIn/Patch (create_category
     # always initializes it to 0), so write it directly for the same reason as above.
     get_client().collection(BUDGET_COLLECTION).document(str(category.id)).update(
@@ -47,4 +49,5 @@ def test_dashboard_summary_returns_aggregates(auth_client):
 @pytest.mark.django_db
 def test_dashboard_requires_auth():
     from django.test import Client
+
     assert Client().get("/api/v1/dashboard/summary").status_code == 401

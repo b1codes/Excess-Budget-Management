@@ -9,9 +9,7 @@ import 'package:frontend/core/theme/thermal_glow.dart';
 void main() {
   Widget harness(Widget child, {Brightness brightness = Brightness.dark}) {
     return MaterialApp(
-      theme: brightness == Brightness.dark
-          ? LLCTheme.dark()
-          : LLCTheme.light(),
+      theme: brightness == Brightness.dark ? LLCTheme.dark() : LLCTheme.light(),
       builder: (context, builtChild) =>
           MeshBackdrop(child: builtChild ?? const SizedBox.shrink()),
       home: Scaffold(body: Center(child: child)),

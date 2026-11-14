@@ -170,3 +170,12 @@ AGENTS.md
 PRODUCT.md
 DESIGN.md
 skills-lock.json
+
+# Test coverage output
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Terraform working directory (created by `terraform init`)
+.terraform/

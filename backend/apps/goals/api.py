@@ -1,20 +1,34 @@
 from ninja import Router
 from config.auth import JWTAuth
 from .schemas import (
-    GoalIn, GoalPatch, GoalOut,
-    SubgoalIn, SubgoalPatch, SubgoalOut,
-    GoalAccountIn, GoalAccountOut,
+    GoalIn,
+    GoalPatch,
+    GoalOut,
+    SubgoalIn,
+    SubgoalPatch,
+    SubgoalOut,
+    GoalAccountIn,
+    GoalAccountOut,
 )
 from .services import (
-    list_goals, create_goal, get_goal, update_goal, delete_goal,
-    list_subgoals, create_subgoal, update_subgoal, delete_subgoal,
-    link_account, unlink_account,
+    list_goals,
+    create_goal,
+    get_goal,
+    update_goal,
+    delete_goal,
+    list_subgoals,
+    create_subgoal,
+    update_subgoal,
+    delete_subgoal,
+    link_account,
+    unlink_account,
 )
 
 router = Router(tags=["goals"], auth=JWTAuth())
 
 
 # --- Goals ---
+
 
 @router.get("", response=list[GoalOut], summary="List goals")
 def list_(request):
@@ -44,6 +58,7 @@ def delete(request, goal_id: str):
 
 # --- Subgoals ---
 
+
 @router.get("/{goal_id}/subgoals", response=list[SubgoalOut], summary="List subgoals")
 def list_subs(request, goal_id: str):
     return list_subgoals(request.auth, goal_id)
@@ -66,6 +81,7 @@ def delete_sub(request, goal_id: str, sid: str):
 
 
 # --- Goal-Account links ---
+
 
 @router.post("/{goal_id}/accounts", response={201: GoalAccountOut}, summary="Link account to goal")
 def link_acc(request, goal_id: str, payload: GoalAccountIn):

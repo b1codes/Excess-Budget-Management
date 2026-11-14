@@ -151,7 +151,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             if (_isUploading)
                               const Positioned.fill(
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             Positioned(
                               bottom: 0,
@@ -207,9 +209,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                       Text(
+                      Text(
                         'When you have no recent history, the AI will use this ratio to balance between savings and purchase goals.',
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 24),
                       Row(
@@ -222,7 +226,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Slider(
                         value: _profile?.defaultSavingsRatio ?? 0.5,
                         onChanged: (val) => setState(() {
-                          _profile = _profile?.copyWith(defaultSavingsRatio: val);
+                          _profile = _profile?.copyWith(
+                            defaultSavingsRatio: val,
+                          );
                         }),
                         onChangeEnd: _saveRatio,
                         divisions: 10,

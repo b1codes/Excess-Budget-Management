@@ -1,15 +1,31 @@
 from ninja import Router
 from config.auth import JWTAuth
 from .schemas import (
-    IncomeSourceIn, IncomeSourcePatch, IncomeSourceOut,
-    ExtraIncomeIn, ExtraIncomePatch, ExtraIncomeOut,
-    OvertimeSettingsIn, OvertimeSettingsOut,
-    OvertimeProjectionRequest, OvertimeProjectionOut,
+    IncomeSourceIn,
+    IncomeSourcePatch,
+    IncomeSourceOut,
+    ExtraIncomeIn,
+    ExtraIncomePatch,
+    ExtraIncomeOut,
+    OvertimeSettingsIn,
+    OvertimeSettingsOut,
+    OvertimeProjectionRequest,
+    OvertimeProjectionOut,
 )
 from .services import (
-    list_sources, create_source, get_source, update_source, delete_source,
-    list_extra, create_extra, get_extra, update_extra, delete_extra,
-    get_overtime_settings, update_overtime_settings, calculate_overtime_projections,
+    list_sources,
+    create_source,
+    get_source,
+    update_source,
+    delete_source,
+    list_extra,
+    create_extra,
+    get_extra,
+    update_extra,
+    delete_extra,
+    get_overtime_settings,
+    update_overtime_settings,
+    calculate_overtime_projections,
 )
 
 sources_router = Router(tags=["income"], auth=JWTAuth())
@@ -18,6 +34,7 @@ overtime_router = Router(tags=["income"], auth=JWTAuth())
 
 
 # ── IncomeSource endpoints ────────────────────────────────────────────────────
+
 
 @sources_router.get("", response=list[IncomeSourceOut], summary="List income sources")
 def list_sources_(request):
@@ -47,6 +64,7 @@ def delete_source_(request, source_id: str):
 
 # ── ExtraIncome endpoints ─────────────────────────────────────────────────────
 
+
 @extra_router.get("", response=list[ExtraIncomeOut], summary="List extra income")
 def list_extra_(request, account_id: str | None = None, budget_category_id: str | None = None):
     return list_extra(request.auth, account_id=account_id, budget_category_id=budget_category_id)
@@ -75,17 +93,22 @@ def delete_extra_(request, extra_id: str):
 
 # ── Overtime endpoints ─────────────────────────────────────────────────────────
 
+
 @overtime_router.get("/settings", response=OvertimeSettingsOut, summary="Get overtime settings")
 def get_overtime_settings_(request):
     return get_overtime_settings(request.auth)
 
 
-@overtime_router.patch("/settings", response=OvertimeSettingsOut, summary="Update overtime settings")
+@overtime_router.patch(
+    "/settings", response=OvertimeSettingsOut, summary="Update overtime settings"
+)
 def patch_overtime_settings_(request, payload: OvertimeSettingsIn):
     return update_overtime_settings(request.auth, payload)
 
 
-@overtime_router.post("/projections", response=OvertimeProjectionOut, summary="Get overtime projections")
+@overtime_router.post(
+    "/projections", response=OvertimeProjectionOut, summary="Get overtime projections"
+)
 def calculate_overtime_projections_(request, payload: OvertimeProjectionRequest):
     return calculate_overtime_projections(request.auth, payload)
 

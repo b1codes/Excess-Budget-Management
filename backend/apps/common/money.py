@@ -2,6 +2,7 @@
 this schema — money amounts and OvertimeSettings' two rate fields — is
 stored as an integer scaled by 100, converted at the service-layer boundary.
 """
+
 from decimal import Decimal, ROUND_HALF_UP
 
 _SCALE = Decimal("100")
