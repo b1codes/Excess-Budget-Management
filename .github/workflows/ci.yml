@@ -1,0 +1,212 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel superseded runs on the same branch / PR.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend-lint:
+    name: Backend · lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: ruff check
+        run: uv run ruff check --output-format=github .
+
+      - name: ruff format
+        run: uv run ruff format --check --diff .
+
+  backend-test:
+    name: Backend · tests + coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      FIRESTORE_EMULATOR_HOST: localhost:8080
+      GOOGLE_CLOUD_PROJECT: excess-budget-dev
+    steps:
+      - uses: actions/checkout@v7
+
+      # Same emulator image as backend/docker-compose.yml. Service containers
+      # can't override the image's command, so start it by hand.
+      - name: Start Firestore emulator
+        run: |
+          docker run -d --name firestore -p 8080:8080 google/cloud-sdk:emulators \
+            gcloud emulators firestore start \
+              --host-port=0.0.0.0:8080 --project="$GOOGLE_CLOUD_PROJECT"
+
+      - uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Wait for Firestore emulator
+        run: |
+          for _ in $(seq 1 60); do
+            curl -fsS "http://$FIRESTORE_EMULATOR_HOST" >/dev/null 2>&1 && exit 0
+            sleep 2
+          done
+          echo "::error::Firestore emulator did not become ready"
+          docker logs firestore
+          exit 1
+
+      # fail_under in [tool.coverage.report] (pyproject.toml) is the gate.
+      - name: pytest
+        run: uv run pytest --cov --cov-report=term --cov-report=xml
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          if [ -f .coverage ]; then
+            {
+              echo '### Backend coverage'
+              echo
+              uv run coverage report --format=markdown --fail-under=0
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend · format, analyze, tests + coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: frontend/.fvmrc
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: dart format
+        run: dart format --output=none --set-exit-if-changed lib test tool
+
+      - name: flutter analyze
+        run: flutter analyze
+
+      # MIN_COVERAGE in tool/coverage.sh is the gate.
+      - name: flutter test + coverage gate
+        run: |
+          set -o pipefail
+          tool/coverage.sh | tee "$RUNNER_TEMP/frontend-coverage.txt"
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          summary="$RUNNER_TEMP/frontend-coverage.txt"
+          if [ -f "$summary" ]; then
+            {
+              echo '### Frontend coverage'
+              echo
+              grep -E '^(TOTAL|OK|FAIL)' "$summary" || true
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          if-no-files-found: ignore
+
+  widgetbook:
+    name: Widgetbook · codegen, analyze, smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend/widgetbook
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: frontend/.fvmrc
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generated code is up to date
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          if ! git diff --exit-code -- lib; then
+            echo "::error::lib/main.directories.g.dart is stale. Run 'dart run build_runner build' in frontend/widgetbook and commit the result."
+            exit 1
+          fi
+
+      - name: dart format
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: flutter analyze
+        run: flutter analyze
+
+      - name: Use-case smoke tests
+        run: flutter test
+
+  infra:
+    name: Infra · terraform fmt + validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
+      - name: terraform fmt
+        run: terraform fmt -check -diff -recursive
+
+      - name: terraform init
+        run: terraform init -backend=false -input=false
+
+      - name: terraform validate
+        run: terraform validate
