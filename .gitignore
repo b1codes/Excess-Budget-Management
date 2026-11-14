@@ -176,3 +176,6 @@ skills-lock.json
 .coverage.*
 coverage.xml
 htmlcov/
+
+# Terraform working directory (created by `terraform init`)
+.terraform/
