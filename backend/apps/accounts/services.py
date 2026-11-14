@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from apps.common.firestore import get_client
 from apps.common.firestore_helpers import get_owned_or_404_fs
-from apps.common.money import to_cents, from_cents
+from apps.common.money import to_cents, from_cents, normalize
 from apps.common.rollups import recompute_goal_from_accounts
 from .models import Account
 
@@ -46,7 +46,7 @@ def create_account(user, payload) -> Account:
         id=account_id,
         user_id=str(user.id),
         name=payload.name,
-        balance=payload.balance,
+        balance=normalize(payload.balance),
         created_at=now,
     )
 

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from google.cloud import firestore
 from apps.common.firestore import get_client
 from apps.common.firestore_helpers import get_owned_or_404_fs
-from apps.common.money import to_cents, from_cents
+from apps.common.money import to_cents, from_cents, normalize
 from apps.common.rollups import apply_allocation_effects
 from apps.common.exceptions import AppError
 from .models import GoalAllocation
@@ -81,7 +81,7 @@ def create_allocation(user, payload) -> GoalAllocation:
         goal_id=payload.goal_id,
         sub_goal_id=payload.sub_goal_id,
         account_id=payload.account_id,
-        amount=payload.amount,
+        amount=normalize(payload.amount),
         created_at=now,
     )
 
