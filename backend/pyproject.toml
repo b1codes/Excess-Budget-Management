@@ -23,6 +23,7 @@ dev = [
   "pytest-asyncio>=0.23",
   "factory-boy>=3.3",
   "ruff>=0.5",
+  "pytest-cov>=5.0",
 ]
 
 [tool.pytest.ini_options]
@@ -34,3 +35,29 @@ asyncio_mode = "auto"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.coverage.run]
+source = ["apps", "config"]
+branch = true
+omit = [
+  "*/tests/*",
+  "*/migrations/*",
+  "config/asgi.py",
+  "config/wsgi.py",
+  "config/settings_test.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+skip_empty = true
+# Ratchet: start just below the measured baseline and raise as coverage improves
+# (backend test suite subtask CU-86bd3g3d4). CI fails if coverage drops below this.
+fail_under = 80
+exclude_also = [
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+]
+
+[tool.coverage.xml]
+output = "coverage.xml"
