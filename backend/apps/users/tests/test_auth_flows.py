@@ -194,3 +194,8 @@ def test_reset_confirm_validates_new_password(anon_api, user):
         {"token": make_reset_token(user.id), "new_password": "short"},
     )
     assert r.status_code == 422
+
+
+def test_patch_me_avatar_url(api):
+    body = api.patch("/auth/me", {"avatar_url": "https://example.com/me.png"}).json()
+    assert body["avatar_url"] == "https://example.com/me.png"
