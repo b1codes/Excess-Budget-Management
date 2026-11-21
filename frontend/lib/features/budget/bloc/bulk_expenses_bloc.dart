@@ -79,7 +79,8 @@ class BulkExpensesBloc extends Bloc<BulkExpensesEvent, BulkExpensesState> {
               (row) => {
                 'budget_category_id': row.budgetCategoryId,
                 'account_id': row.accountId,
-                'amount': row.amount,
+                // Validated non-null above. Decimals go as strings.
+                'amount': row.amount!.toStringAsFixed(2),
                 'description': row.description ?? '',
                 'date': row.date.toIso8601String().split('T').first,
               },

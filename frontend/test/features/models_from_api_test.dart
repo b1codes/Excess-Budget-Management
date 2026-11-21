@@ -302,9 +302,9 @@ void main() {
     test('toJson and copyWith', () {
       final s = OvertimeSettings.fromJson(overtimeSettingsJson());
       expect(s.toJson(), {
-        'hourly_base_rate': 30.0,
-        'overtime_multiplier': 1.5,
-        'estimated_tax_rate': 0.25,
+        'hourly_base_rate': '30.00',
+        'overtime_multiplier': '1.50',
+        'estimated_tax_rate': '0.25',
       });
       final t = s.copyWith(hourlyBaseRate: 40);
       expect(t.hourlyBaseRate, 40);

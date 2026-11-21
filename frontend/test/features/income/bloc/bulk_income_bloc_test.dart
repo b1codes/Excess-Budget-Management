@@ -132,7 +132,7 @@ void main() {
       verify: (_) => verify(
         () => repo.bulkInsertExtraIncome([
           {
-            'amount': 100.0,
+            'amount': '100.00',
             'account_id': 'acc-1',
             'budget_category_id': 'cat-1',
             'description': 'Freelance',

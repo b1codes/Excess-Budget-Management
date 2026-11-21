@@ -120,7 +120,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final body = api.calls('POST /expenses').single.jsonBody;
-      expect(body['amount'], 40.0);
+      expect(body['amount'], '40.00');
       expect(body['budget_category_id'], 'cat-2');
       expect(body['account_id'], 'acc-2');
       expect(body['description'], 'Gas');
@@ -216,7 +216,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final body = api.calls('POST /income/extra').single.jsonBody;
-      expect(body['amount'], 100.0);
+      expect(body['amount'], '100.00');
       expect(body['description'], 'Bonus');
       expect(body['account_id'], 'acc-1');
       expect(body['budget_category_id'], 'cat-2');

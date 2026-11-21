@@ -178,14 +178,14 @@ void main() {
             {
               'budget_category_id': 'cat-1',
               'account_id': 'acc-1',
-              'amount': 12.5,
+              'amount': '12.50',
               'description': 'Lunch',
               'date': '2026-03-04',
             },
             {
               'budget_category_id': 'cat-2',
               'account_id': null,
-              'amount': 3.0,
+              'amount': '3.00',
               'description': '',
               'date': '2026-03-04',
             },

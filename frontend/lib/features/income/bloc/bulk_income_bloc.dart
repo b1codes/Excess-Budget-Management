@@ -81,7 +81,8 @@ class BulkIncomeBloc extends Bloc<BulkIncomeEvent, BulkIncomeState> {
         final insertData = validatedRows
             .map(
               (row) => {
-                'amount': row.amount,
+                // Validated non-null above. Decimals go as strings.
+                'amount': row.amount!.toStringAsFixed(2),
                 'account_id': row.accountId,
                 'budget_category_id': row.categoryId,
                 'description': row.description,
