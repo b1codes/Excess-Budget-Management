@@ -107,6 +107,22 @@ class FakeApi {
   int unauthenticatedCalls = 0;
 
   void enqueue(int status, [Object? body]) => adapter.enqueue(status, body);
+
+  final _routes = <String, (int, Object?)>{};
+
+  /// Answers every `"METHOD /path"` request with [body] (and [status]) once
+  /// the queue is empty. Unrouted requests get a 404. Handy for widgets that
+  /// make several requests in an order the test doesn't care about.
+  void route(String methodAndPath, Object? body, {int status = 200}) {
+    _routes[methodAndPath] = (status, body);
+    adapter.fallback ??= (o) =>
+        _routes['${o.method} ${o.path}'] ?? (404, {'detail': 'Not found'});
+  }
+
+  /// Requests matching `"METHOD /path"`, in order.
+  List<RecordedRequest> calls(String methodAndPath) => adapter.requests
+      .where((r) => '${r.method} ${r.path}' == methodAndPath)
+      .toList();
   List<RecordedRequest> get requests => adapter.requests;
   RecordedRequest get last => adapter.requests.last;
 }
