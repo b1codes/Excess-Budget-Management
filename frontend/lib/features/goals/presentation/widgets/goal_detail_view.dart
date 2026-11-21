@@ -366,10 +366,11 @@ class _GoalDetailViewState extends State<GoalDetailView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Line Items (Subgoals)',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Flexible(
+                        child: Text(
+                          'Line Items (Subgoals)',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
                       if (_currentGoal.accountIds.isEmpty)
@@ -562,13 +563,16 @@ class _GoalDetailViewState extends State<GoalDetailView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '\$${_currentGoal.currentAmount.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontFeatures: const [FontFeature.tabularFigures()],
+                Flexible(
+                  child: Text(
+                    '\$${_currentGoal.currentAmount.toStringAsFixed(2)}',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   'Target: \$${_currentGoal.targetAmount.toStringAsFixed(2)}',
                   style: TextStyle(
