@@ -99,6 +99,12 @@ lint:  ## Run ruff check (pass FIX=1 to auto-fix).
 format-check:  ## Check backend formatting with ruff (no changes written).
 	$(COMPOSE) exec $(WEB) uv run ruff format --check .
 
+# --- API contract ---------------------------------------------------------
+
+.PHONY: openapi
+openapi:  ## Regenerate backend/openapi.json (the API contract). No stack needed.
+	cd backend && DJANGO_SECRET_KEY=$${DJANGO_SECRET_KEY:-openapi-export} uv run python manage.py export_openapi
+
 # --- Frontend & Widgetbook ------------------------------------------------
 # Uses fvm (pinned by frontend/.fvmrc) when installed, so the Flutter version
 # matches CI. Override with FLUTTER=... / DART=...
