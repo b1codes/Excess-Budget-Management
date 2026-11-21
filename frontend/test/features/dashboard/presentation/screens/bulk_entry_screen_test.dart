@@ -17,7 +17,10 @@ void main() {
   late MockBudgetBloc budget;
   late MockAccountBloc accounts;
 
-  setUpAll(() => registerFallbackValue(LoadBudgets()));
+  setUpAll(() {
+    registerFallbackValue(LoadBudgets());
+    registerFallbackValue(LoadAccounts());
+  });
 
   setUp(() {
     api = FakeApi()
@@ -75,13 +78,17 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('opens on the expenses tab and asks the budget to load', (
+  // Regression: only the budget was loaded, so the account dropdown was
+  // empty unless the Accounts tab had been opened first (found by the E2E
+  // suite).
+  testWidgets('opens on the expenses tab and loads categories and accounts', (
     tester,
   ) async {
     await open(tester);
     expect(find.text('Bulk Entry'), findsOneWidget);
     expect(find.text('Expense 1'), findsOneWidget);
     verify(() => budget.add(any(that: isA<LoadBudgets>()))).called(1);
+    verify(() => accounts.add(any(that: isA<LoadAccounts>()))).called(1);
   });
 
   group('expenses', () {
