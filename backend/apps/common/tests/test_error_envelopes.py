@@ -5,6 +5,7 @@ They aren't in openapi.json, so they're pinned here instead.
 * Errors raised by the app: {"error": {"code", "message", "details"}}
 * Request validation (ninja): 422 {"detail": [{"type", "loc", "msg", ...}]}
 * Missing or bad credentials (ninja): 401 {"detail": "Unauthorized"}
+* A body that isn't JSON (ninja): 400 {"detail": "Cannot parse request body"}
 """
 
 from unittest.mock import patch
@@ -63,3 +64,9 @@ def test_missing_credentials(anon_api):
     r = anon_api.get("/accounts")
     assert r.status_code == 401
     assert r.json() == {"detail": "Unauthorized"}
+
+
+def test_unparseable_body(api):
+    r = api.client.post("/api/v1/accounts", "not json", content_type="application/json")
+    assert r.status_code == 400
+    assert r.json() == {"detail": "Cannot parse request body"}
