@@ -171,18 +171,4 @@ class GoalRepository {
   }
 
   Future<void> deleteGoal(String id) => client.delete<void>('/goals/$id');
-
-  Future<List<Goal>> getSubgoals(String goalId) async {
-    // The backend returns subgoals nested in goal; we can also GET them directly.
-    await client.get<List<dynamic>>('/goals/$goalId/subgoals');
-    // Subgoals come back as SubgoalOut — wrap them as a minimal Goal proxy
-    // by re-fetching the parent goal. For most use cases callers just need the
-    // subgoals list from the Goal object itself, so we re-fetch:
-    final goals = await getGoals();
-    final goal = goals.firstWhere(
-      (g) => g.id == goalId,
-      orElse: () => throw StateError('Goal $goalId not found'),
-    );
-    return [goal]; // Returns parent with nested subGoals
-  }
 }
