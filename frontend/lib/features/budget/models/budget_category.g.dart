@@ -9,10 +9,10 @@ part of 'budget_category.dart';
 BudgetCategory _$BudgetCategoryFromJson(Map<String, dynamic> json) =>
     BudgetCategory(
       id: json['id'] as String,
-      userId: json['user_id'] as String,
+      userId: json['user_id'] as String? ?? '',
       name: json['name'] as String,
-      limitAmount: (json['limit_amount'] as num).toDouble(),
-      spentAmount: (json['spent_amount'] as num).toDouble(),
+      limitAmount: parseAmount(json['limit_amount']),
+      spentAmount: parseAmount(json['spent_amount']),
       iconCode: (json['icon_code'] as num?)?.toInt(),
       colorHex: json['color_hex'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),

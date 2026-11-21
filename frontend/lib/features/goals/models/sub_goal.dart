@@ -1,3 +1,5 @@
+import 'package:frontend/core/utils/json_parsing.dart';
+
 class SubGoal {
   final String id;
   final String goalId;
@@ -23,10 +25,11 @@ class SubGoal {
     return SubGoal(
       id: json['id'] as String,
       goalId: json['goal_id'] as String,
-      userId: json['user_id'] as String,
+      // The API infers the owner from the auth token and omits user_id.
+      userId: json['user_id'] as String? ?? '',
       name: json['name'] as String,
-      targetAmount: (json['target_amount'] as num).toDouble(),
-      currentAmount: (json['current_amount'] as num).toDouble(),
+      targetAmount: parseAmount(json['target_amount']),
+      currentAmount: parseAmount(json['current_amount']),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }

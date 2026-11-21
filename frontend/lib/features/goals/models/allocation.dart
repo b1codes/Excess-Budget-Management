@@ -1,3 +1,5 @@
+import 'package:frontend/core/utils/json_parsing.dart';
+
 class GoalAllocation {
   final String id;
   final String userId;
@@ -34,7 +36,7 @@ class GoalAllocation {
       accountName: json['accounts'] != null
           ? json['accounts']['name'] as String?
           : null,
-      amount: (json['amount'] as num).toDouble(),
+      amount: parseAmount(json['amount']),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
