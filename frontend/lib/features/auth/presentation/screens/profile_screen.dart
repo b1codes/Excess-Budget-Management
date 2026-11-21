@@ -223,9 +223,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
+                      const Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        spacing: 12,
+                        children: [
                           Text('Purchase Goals'),
                           Text('Savings Goals'),
                         ],

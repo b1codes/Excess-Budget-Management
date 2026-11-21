@@ -155,6 +155,9 @@ class _GoalListScreenState extends State<GoalListScreen> {
             : null,
       ),
       floatingActionButton: FloatingActionButton(
+        // The tab shell keeps every visited tab mounted, so each tab's FAB
+        // needs its own hero tag or route transitions find duplicates.
+        heroTag: 'goals_fab',
         onPressed: _showAddGoal,
         child: const Icon(Icons.add),
       ),

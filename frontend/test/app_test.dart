@@ -33,11 +33,24 @@ void main() {
         if (path == '/auth/me') {
           return signedIn ? (200, userJson()) : (401, {'detail': 'no'});
         }
-        if (!signedIn) return (401, {'detail': 'expired'});
-        if (path == '/allocations/summary') {
-          return (200, {'totalSavings': 0, 'totalPurchases': 0});
+        if (path == '/auth/login' || path == '/auth/signup') {
+          final body = options.data as Map<String, dynamic>;
+          if (body['password'] != 'correct horse') {
+            return (401, {'detail': 'Invalid credentials'});
+          }
+          signedIn = true;
+          return (path == '/auth/login' ? 200 : 201, authResultJson());
         }
-        return (200, <dynamic>[]);
+        if (!signedIn) return (401, {'detail': 'expired'});
+        return switch (path) {
+          '/allocations/summary' => (
+            200,
+            {'totalSavings': 0, 'totalPurchases': 0},
+          ),
+          '/income/overtime/settings' => (200, overtimeSettingsJson()),
+          '/income/overtime/projections' => (200, overtimeProjectionJson()),
+          _ => (200, <dynamic>[]),
+        };
       };
     tokens = MockTokenStore();
     when(() => tokens.readAccess()).thenAnswer((_) async => 'access');
@@ -47,9 +60,10 @@ void main() {
   });
 
   Future<({BudgetApp app, AuthBloc authBloc})> pumpApp(
-    WidgetTester tester,
-  ) async {
-    tester.view.physicalSize = const Size(1200, 900);
+    WidgetTester tester, {
+    Size size = const Size(1200, 900),
+  }) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
@@ -158,5 +172,130 @@ void main() {
     await tester.tap(find.text('Sign up'));
     await tester.pumpAndSettle();
     expect(find.byType(SignupScreen), findsOneWidget);
+  });
+
+  group('signing in', () {
+    testWidgets('a wrong password shows the error and stays on login', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      final fields = find.byType(TextField);
+      await tester.enterText(fields.at(0), 'user@example.com');
+      await tester.enterText(fields.at(1), 'wrong');
+      await tester.tap(find.text('Login'));
+      await tester.pumpAndSettle();
+      expect(find.text('Invalid credentials'), findsOneWidget);
+      expect(find.byType(LoginScreen), findsOneWidget);
+    });
+
+    testWidgets('the right password opens the dashboard', (tester) async {
+      await pumpApp(tester);
+      final fields = find.byType(TextField);
+      await tester.enterText(fields.at(0), 'user@example.com');
+      await tester.enterText(fields.at(1), 'correct horse');
+      await tester.tap(find.text('Login'));
+      await tester.pumpAndSettle();
+      expect(find.byType(OverviewTab), findsOneWidget);
+      verify(() => tokens.write('access-token', 'refresh-token')).called(1);
+    });
+
+    testWidgets('signing up opens the dashboard', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Sign up'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Email'),
+        'new@example.com',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Password'),
+        'wrong',
+      );
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Sign Up'));
+      await tester.pumpAndSettle();
+      expect(find.text('Invalid credentials'), findsOneWidget);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Password'),
+        'correct horse',
+      );
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Sign Up'));
+      await tester.pumpAndSettle();
+      expect(find.byType(OverviewTab), findsOneWidget);
+    });
+
+    testWidgets('the signup screen links back to login', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Sign up'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Already have an account? Login'));
+      await tester.pumpAndSettle();
+      expect(find.byType(LoginScreen), findsOneWidget);
+    });
+  });
+
+  group('navigation', () {
+    Future<void> visitEveryTab(WidgetTester tester) async {
+      for (final (label, marker) in [
+        ('Transactions', 'Transactions Ledger'),
+        ('Accounts', 'No accounts found. Add one!'),
+        ('Budget', 'No categories yet'),
+        ('Goals', 'No goals yet. Add one to start saving!'),
+        ('Overview', 'Financial Overview'),
+      ]) {
+        await tester.tap(find.text(label).last);
+        await tester.pumpAndSettle();
+        expect(find.text(marker), findsOneWidget, reason: label);
+      }
+    }
+
+    // Regression: every tab's FAB used the default hero tag. The shell keeps
+    // visited tabs mounted, so opening Profile after visiting several tabs
+    // failed with "multiple heroes that share the same tag".
+    testWidgets('wide: the side rail reaches every section and the profile', (
+      tester,
+    ) async {
+      signedIn = true;
+      await pumpApp(tester, size: const Size(1400, 1000));
+      await visitEveryTab(tester);
+
+      await tester.tap(find.byTooltip('Profile Settings'));
+      await tester.pumpAndSettle();
+      expect(find.text('Profile Settings'), findsWidgets);
+    });
+
+    testWidgets('compact: the bottom bar reaches every section', (
+      tester,
+    ) async {
+      signedIn = true;
+      await pumpApp(tester, size: const Size(400, 900));
+      await visitEveryTab(tester);
+      await tester.tap(find.byTooltip('Profile Settings'));
+      await tester.pumpAndSettle();
+      expect(find.text('Logout'), findsOneWidget);
+    });
+
+    testWidgets('opens overtime, history and bulk entry', (tester) async {
+      signedIn = true;
+      await pumpApp(tester, size: const Size(1400, 1400));
+
+      await tester.tap(find.byTooltip('Allocation History'));
+      await tester.pumpAndSettle();
+      expect(find.text('No allocations yet'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Bulk Entry').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Save All Expenses'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Goals').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Overtime Accelerator'));
+      await tester.pumpAndSettle();
+      expect(find.text('Earnings Profile'), findsOneWidget);
+    });
   });
 }

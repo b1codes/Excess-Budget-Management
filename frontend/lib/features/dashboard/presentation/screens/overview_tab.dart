@@ -164,6 +164,9 @@ class _OverviewTabState extends State<OverviewTab> {
               ? AppBar(title: const Text('Overview'))
               : null,
           floatingActionButton: FloatingActionButton.extended(
+            // The tab shell keeps every visited tab mounted, so each tab's FAB
+            // needs its own hero tag or route transitions find duplicates.
+            heroTag: 'overview_fab',
             onPressed: () => context.go('/bulk-entry'),
             icon: const Icon(Icons.library_add),
             label: const Text('Bulk Entry'),

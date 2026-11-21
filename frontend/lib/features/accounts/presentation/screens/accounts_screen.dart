@@ -125,6 +125,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        // The tab shell keeps every visited tab mounted, so each tab's FAB
+        // needs its own hero tag or route transitions find duplicates.
+        heroTag: 'accounts_fab',
         onPressed: () => _showAccountDialog(),
         child: const Icon(Icons.add),
       ),
