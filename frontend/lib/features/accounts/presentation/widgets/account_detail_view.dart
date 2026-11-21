@@ -127,18 +127,35 @@ class AccountDetailView extends StatelessWidget {
       create: (context) =>
           AccountDetailBloc(repository: context.read<AccountRepository>())
             ..add(LoadAccountDetail(account)),
-      child: BlocBuilder<AccountDetailBloc, AccountDetailState>(
-        builder: (context, state) {
-          if (state.isLoading && state.account == null) {
-            return const Center(child: CircularProgressIndicator());
+      // Follow the saved account (edits from this view, or the list's poll)
+      // so the name, balance and transactions stay current. Skipped while
+      // editing so a poll doesn't throw away the user's changes.
+      child: BlocListener<AccountBloc, AccountState>(
+        listener: (context, accountState) {
+          if (accountState is! AccountLoaded) return;
+          final fresh = accountState.accounts
+              .where((a) => a.id == account.id)
+              .firstOrNull;
+          final detail = context.read<AccountDetailBloc>();
+          if (fresh != null &&
+              fresh != detail.state.account &&
+              !detail.state.isEditing) {
+            detail.add(LoadAccountDetail(fresh));
           }
-
-          if (state.isEditing) {
-            return _buildEditMode(context, state);
-          }
-
-          return _buildViewMode(context, state);
         },
+        child: BlocBuilder<AccountDetailBloc, AccountDetailState>(
+          builder: (context, state) {
+            if (state.isLoading && state.account == null) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (state.isEditing) {
+              return _buildEditMode(context, state);
+            }
+
+            return _buildViewMode(context, state);
+          },
+        ),
       ),
     );
   }
