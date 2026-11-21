@@ -175,8 +175,6 @@ void main() {
       expect(find.text('Forgot password not implemented yet'), findsOneWidget);
     });
 
-    // Regression: the sheet's callback read AuthBloc through the sheet's own,
-    // already-closed context, which throws.
     testWidgets('Auth0 sign-in sends the token to the bloc', (tester) async {
       await pumpForm(tester);
       await tester.tap(find.text('Continue with Auth0'));

@@ -38,8 +38,8 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   void _loginWithAuth0() {
-    // Read the bloc now: the sheet closes itself before calling onLogin, so
-    // its own context is no longer usable for lookups by then.
+    // Read the bloc from the form's context up front rather than from the
+    // sheet's, which is already being closed when onLogin runs.
     final authBloc = context.read<AuthBloc>();
     showModalBottomSheet<void>(
       context: context,
