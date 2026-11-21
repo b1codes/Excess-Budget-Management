@@ -13,7 +13,15 @@ class AllocationHistoryBloc
     on<FetchAllocationHistory>((event, emit) async {
       emit(AllocationHistoryLoading());
       try {
-        final allocations = await goalRepository.getAllocations();
+        // The API returns ids only, so look goal names up separately. The
+        // names are a nicety: if goals fail to load, still show the history.
+        final (allocations, goalNames) = await (
+          goalRepository.getAllocations(),
+          goalRepository
+              .getGoals()
+              .then((goals) => {for (final g in goals) g.id: g.name})
+              .catchError((Object _) => <String, String>{}),
+        ).wait;
 
         final List<AllocationListItem> groupedItems = [];
         String? currentMonth;
@@ -24,7 +32,13 @@ class AllocationHistoryBloc
             groupedItems.add(AllocationMonthHeader(monthStr));
             currentMonth = monthStr;
           }
-          groupedItems.add(AllocationItem(allocation));
+          groupedItems.add(
+            AllocationItem(
+              allocation.goalName != null
+                  ? allocation
+                  : allocation.withGoalName(goalNames[allocation.goalId]),
+            ),
+          );
         }
 
         emit(AllocationHistoryLoaded(groupedItems));

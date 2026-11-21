@@ -38,6 +38,7 @@ class TransactionsIncomeTab extends StatelessWidget {
               itemBuilder: (context, index) {
                 final inc = income[index];
                 return TransactionCard(
+                  id: inc.id,
                   title: inc.description ?? 'Income',
                   amount: inc.amount,
                   date: inc.dateReceived,

@@ -41,6 +41,19 @@ class GoalAllocation {
     );
   }
 
+  /// A copy with [goalName] set, for when the name is looked up separately.
+  GoalAllocation withGoalName(String? goalName) => GoalAllocation(
+    id: id,
+    userId: userId,
+    goalId: goalId,
+    goalName: goalName,
+    accountId: accountId,
+    subGoalId: subGoalId,
+    accountName: accountName,
+    amount: amount,
+    createdAt: createdAt,
+  );
+
   Map<String, dynamic> toJson() {
     return {
       'goal_id': goalId,
