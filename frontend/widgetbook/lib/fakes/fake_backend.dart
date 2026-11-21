@@ -247,7 +247,7 @@ class _FakeStore {
         'user_id': Fixtures.userId,
         'current_amount': 0.0,
         'sub_goals': <_Json>[],
-        'goal_accounts': <_Json>[],
+        'account_ids': <String>[],
         ...data,
         'target_amount': _num(data['target_amount']),
       }),
@@ -360,14 +360,14 @@ class _FakeStore {
   Object _linkAccount(String goalId, _Json data) {
     final goal = _find(_goals, goalId);
     if (goal == null) return const _NotFound();
-    final link = {'account_id': data['account_id']};
-    (goal['goal_accounts'] as List).add(link);
-    return link;
+    final accountId = data['account_id'] as String;
+    (goal['account_ids'] as List).add(accountId);
+    return {'goal_id': goalId, 'account_id': accountId};
   }
 
   Object? _unlinkAccount(String goalId, String accountId) {
-    final links = _find(_goals, goalId)?['goal_accounts'] as List?;
-    links?.removeWhere((l) => (l as Map)['account_id'] == accountId);
+    final links = _find(_goals, goalId)?['account_ids'] as List?;
+    links?.remove(accountId);
     return null;
   }
 

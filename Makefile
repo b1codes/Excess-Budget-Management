@@ -105,6 +105,10 @@ format-check:  ## Check backend formatting with ruff (no changes written).
 openapi:  ## Regenerate backend/openapi.json (the API contract). No stack needed.
 	cd backend && DJANGO_SECRET_KEY=$${DJANGO_SECRET_KEY:-openapi-export} uv run python manage.py export_openapi
 
+.PHONY: openapi-check
+openapi-check:  ## Fail if backend/openapi.json doesn't match the API.
+	cd backend && DJANGO_SECRET_KEY=$${DJANGO_SECRET_KEY:-openapi-export} uv run python manage.py export_openapi --check
+
 # --- Frontend & Widgetbook ------------------------------------------------
 # Uses fvm (pinned by frontend/.fvmrc) when installed, so the Flutter version
 # matches CI. Override with FLUTTER=... / DART=...
@@ -145,7 +149,7 @@ tf-check:  ## Terraform: fmt check + validate (no backend, no AWS creds needed).
 # --- CI parity ------------------------------------------------------------
 
 .PHONY: ci
-ci: lint format-check test-cov fe-check fe-test-cov wb-check tf-check  ## Run every CI check locally (needs `make up`).
+ci: lint format-check openapi-check test-cov fe-check fe-test-cov wb-check tf-check  ## Run every CI check locally (needs `make up`).
 
 .PHONY: health
 health:  ## Hit the /health endpoint from the host.

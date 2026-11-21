@@ -195,9 +195,7 @@ abstract final class Fixtures {
       'category': 'savings',
       'created_at': _daysAgo(300),
       'sub_goals': <Map<String, dynamic>>[],
-      'goal_accounts': [
-        {'account_id': 'acc-savings'},
-      ],
+      'account_ids': ['acc-savings'],
     },
     {
       'id': 'goal-japan',
@@ -214,10 +212,7 @@ abstract final class Fixtures {
         _subGoal('sub-hotels', 'goal-japan', 'Hotels', 2400, 900),
         _subGoal('sub-rail', 'goal-japan', 'JR Rail Pass', 450, 250),
       ],
-      'goal_accounts': [
-        {'account_id': 'acc-checking'},
-        {'account_id': 'acc-savings'},
-      ],
+      'account_ids': ['acc-checking', 'acc-savings'],
     },
     {
       'id': 'goal-laptop',
@@ -230,7 +225,7 @@ abstract final class Fixtures {
       'category': 'purchase',
       'created_at': _daysAgo(150),
       'sub_goals': <Map<String, dynamic>>[],
-      'goal_accounts': <Map<String, dynamic>>[],
+      'account_ids': <String>[],
     },
   ];
 
@@ -309,6 +304,9 @@ abstract final class Fixtures {
         },
       ],
       'totalAllocated': excessFunds,
+      'reasoning':
+          'The Japan trip is closest to its date, so it gets most of this '
+          'month; the rest goes to long-term growth.',
     };
   }
 
