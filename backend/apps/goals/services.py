@@ -1,4 +1,5 @@
 import uuid
+from collections import defaultdict
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from apps.common.firestore import get_client
@@ -43,6 +44,35 @@ def _subgoal_from_doc(snapshot) -> Subgoal:
         current_amount=from_cents(data["current_amount"]),
         created_at=data["created_at"],
     )
+
+
+def with_children(user, goals: list[Goal]) -> list[Goal]:
+    """Fill in each goal's sub_goals and account_ids (both oldest first).
+
+    Two queries however many goals there are: one goal's children are looked up
+    by goal_id, several goals' by owner."""
+    if not goals:
+        return goals
+    client = get_client()
+    if len(goals) == 1:
+        field, value = "goal_id", str(goals[0].id)
+    else:
+        field, value = "user_id", str(user.id)
+
+    subgoals = defaultdict(list)
+    for doc in client.collection(SUBGOALS_COLLECTION).where(field, "==", value).stream():
+        sub = _subgoal_from_doc(doc)
+        subgoals[str(sub.goal_id)].append(sub)
+
+    links = defaultdict(list)
+    for doc in client.collection(GOAL_ACCOUNTS_COLLECTION).where(field, "==", value).stream():
+        data = doc.to_dict()
+        links[data["goal_id"]].append((data["created_at"], uuid.UUID(data["account_id"])))
+
+    for goal in goals:
+        goal.sub_goals = sorted(subgoals[str(goal.id)], key=lambda s: s.created_at)
+        goal.account_ids = [account_id for _, account_id in sorted(links[str(goal.id)])]
+    return goals
 
 
 # --- Goal CRUD ---

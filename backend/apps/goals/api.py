@@ -22,6 +22,7 @@ from .services import (
     delete_subgoal,
     link_account,
     unlink_account,
+    with_children,
 )
 
 router = Router(tags=["goals"], auth=JWTAuth())
@@ -32,22 +33,22 @@ router = Router(tags=["goals"], auth=JWTAuth())
 
 @router.get("", response=list[GoalOut], summary="List goals")
 def list_(request):
-    return list_goals(request.auth)
+    return with_children(request.auth, list_goals(request.auth))
 
 
 @router.post("", response={201: GoalOut}, summary="Create goal")
 def create(request, payload: GoalIn):
-    return 201, create_goal(request.auth, payload)
+    return 201, create_goal(request.auth, payload)  # a new goal has no children
 
 
 @router.get("/{goal_id}", response=GoalOut, summary="Get goal")
 def get(request, goal_id: str):
-    return get_goal(request.auth, goal_id)
+    return with_children(request.auth, [get_goal(request.auth, goal_id)])[0]
 
 
 @router.patch("/{goal_id}", response=GoalOut, summary="Update goal")
 def patch(request, goal_id: str, payload: GoalPatch):
-    return update_goal(request.auth, goal_id, payload)
+    return with_children(request.auth, [update_goal(request.auth, goal_id, payload)])[0]
 
 
 @router.delete("/{goal_id}", response={204: None}, summary="Delete goal")
