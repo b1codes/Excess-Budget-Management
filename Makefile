@@ -119,7 +119,7 @@ DART         ?= $(if $(FVM),fvm dart,dart)
 
 .PHONY: fe-check
 fe-check:  ## Frontend: dart format check + flutter analyze.
-	cd frontend && $(DART) format --output=none --set-exit-if-changed lib test tool
+	cd frontend && $(DART) format --output=none --set-exit-if-changed lib test tool integration_test test_driver
 	cd frontend && $(FLUTTER) analyze
 
 .PHONY: fe-test
@@ -136,6 +136,10 @@ wb-check:  ## Widgetbook: format check, analyze, and use-case smoke tests.
 	cd frontend/widgetbook && $(FLUTTER) analyze
 	cd frontend/widgetbook && $(FLUTTER) test
 
+.PHONY: e2e
+e2e:  ## E2E journeys in Chrome against the full stack (needs Docker, Chrome, uv).
+	FLUTTER="$(FLUTTER)" frontend/tool/e2e.sh $(ARGS)
+
 # --- Infra ----------------------------------------------------------------
 
 TERRAFORM    ?= terraform
@@ -149,7 +153,7 @@ tf-check:  ## Terraform: fmt check + validate (no backend, no AWS creds needed).
 # --- CI parity ------------------------------------------------------------
 
 .PHONY: ci
-ci: lint format-check openapi-check test-cov fe-check fe-test-cov wb-check tf-check  ## Run every CI check locally (needs `make up`).
+ci: lint format-check openapi-check test-cov fe-check fe-test-cov wb-check tf-check e2e  ## Run every CI check locally (needs `make up`).
 
 .PHONY: health
 health:  ## Hit the /health endpoint from the host.
