@@ -61,7 +61,10 @@ class _MeshPainter extends CustomPainter {
       final radius = size.longestSide * 0.75;
       final paint = Paint()
         ..shader = RadialGradient(
-          colors: [color.withValues(alpha: alpha), color.withValues(alpha: 0)],
+          colors: [
+            color.withValues(alpha: alpha),
+            color.withValues(alpha: 0),
+          ],
         ).createShader(Rect.fromCircle(center: center, radius: radius));
       canvas.drawRect(Offset.zero & size, paint);
     }

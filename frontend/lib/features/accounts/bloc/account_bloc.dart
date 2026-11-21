@@ -81,6 +81,8 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
   final AccountRepository repository;
   StreamSubscription<List<Account>>? _subscription;
 
+  // Writes refetch the list right away instead of waiting up to 30 seconds
+  // for the next poll, so the change shows as soon as it's saved.
   AccountBloc({required this.repository}) : super(AccountInitial()) {
     on<LoadAccounts>((event, emit) async {
       emit(AccountLoading());
@@ -106,6 +108,7 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
     on<AddAccount>((event, emit) async {
       try {
         await repository.addAccount(event.name, event.balance);
+        emit(AccountLoaded(await repository.getAccounts()));
       } catch (e) {
         emit(AccountError(e.toString()));
       }
@@ -114,6 +117,7 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
     on<UpdateAccount>((event, emit) async {
       try {
         await repository.updateAccount(event.id, event.name, event.balance);
+        emit(AccountLoaded(await repository.getAccounts()));
       } catch (e) {
         emit(AccountError(e.toString()));
       }
@@ -122,6 +126,7 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
     on<DeleteAccount>((event, emit) async {
       try {
         await repository.deleteAccount(event.id);
+        emit(AccountLoaded(await repository.getAccounts()));
       } catch (e) {
         emit(AccountError(e.toString()));
       }

@@ -6,7 +6,12 @@ def test_create_goal_happy_path(auth_client):
     client, _ = auth_client
     r = client.post(
         "/api/v1/goals",
-        data={"name": "Vacation Fund", "target_amount": "2000.00", "type": "short_term", "category": "savings"},
+        data={
+            "name": "Vacation Fund",
+            "target_amount": "2000.00",
+            "type": "short_term",
+            "category": "savings",
+        },
         content_type="application/json",
     )
     assert r.status_code == 201, r.content
@@ -35,16 +40,27 @@ def test_cross_user_goal_returns_404(auth_client, other_auth_client):
 def test_subgoal_under_wrong_goal_returns_404(auth_client):
     """A subgoal of goal A cannot be accessed via /goals/B/subgoals/{id}."""
     import json
+
     client, _ = auth_client
-    g1 = client.post("/api/v1/goals", data=json.dumps({"name": "G1", "type": "short_term", "category": "savings"}),
-                     content_type="application/json").json()
-    g2 = client.post("/api/v1/goals", data=json.dumps({"name": "G2", "type": "short_term", "category": "savings"}),
-                     content_type="application/json").json()
-    s = client.post(f"/api/v1/goals/{g1['id']}/subgoals",
-                    data=json.dumps({"name": "A", "target_amount": "10.00"}),
-                    content_type="application/json").json()
+    g1 = client.post(
+        "/api/v1/goals",
+        data=json.dumps({"name": "G1", "type": "short_term", "category": "savings"}),
+        content_type="application/json",
+    ).json()
+    g2 = client.post(
+        "/api/v1/goals",
+        data=json.dumps({"name": "G2", "type": "short_term", "category": "savings"}),
+        content_type="application/json",
+    ).json()
+    s = client.post(
+        f"/api/v1/goals/{g1['id']}/subgoals",
+        data=json.dumps({"name": "A", "target_amount": "10.00"}),
+        content_type="application/json",
+    ).json()
     # Subgoal s belongs to g1; accessing via g2 must 404
-    r = client.patch(f"/api/v1/goals/{g2['id']}/subgoals/{s['id']}",
-                     data=json.dumps({"name": "Updated"}),
-                     content_type="application/json")
+    r = client.patch(
+        f"/api/v1/goals/{g2['id']}/subgoals/{s['id']}",
+        data=json.dumps({"name": "Updated"}),
+        content_type="application/json",
+    )
     assert r.status_code == 404, r.content

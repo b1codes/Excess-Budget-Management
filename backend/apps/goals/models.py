@@ -1,5 +1,5 @@
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -15,6 +15,9 @@ class Goal:
     type: str
     category: str
     created_at: datetime
+    # Filled in by services.with_children(); empty until then.
+    sub_goals: list["Subgoal"] = field(default_factory=list)
+    account_ids: list[uuid.UUID] = field(default_factory=list)
 
 
 @dataclass

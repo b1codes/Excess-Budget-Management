@@ -87,9 +87,69 @@ psql:  ## Open a psql session against the dockerized Postgres.
 test:  ## Run pytest inside the web container (pass ARGS=... for extras).
 	$(COMPOSE) exec $(WEB) uv run pytest $(ARGS)
 
+.PHONY: test-cov
+test-cov:  ## Run pytest with coverage; fails below fail_under in pyproject.toml.
+	$(COMPOSE) exec $(WEB) uv run pytest --cov --cov-report=term $(ARGS)
+
 .PHONY: lint
 lint:  ## Run ruff check (pass FIX=1 to auto-fix).
 	$(COMPOSE) exec $(WEB) uv run ruff check $(if $(FIX),--fix,) .
+
+.PHONY: format-check
+format-check:  ## Check backend formatting with ruff (no changes written).
+	$(COMPOSE) exec $(WEB) uv run ruff format --check .
+
+# --- API contract ---------------------------------------------------------
+
+.PHONY: openapi
+openapi:  ## Regenerate backend/openapi.json (the API contract). No stack needed.
+	cd backend && DJANGO_SECRET_KEY=$${DJANGO_SECRET_KEY:-openapi-export} uv run python manage.py export_openapi
+
+.PHONY: openapi-check
+openapi-check:  ## Fail if backend/openapi.json doesn't match the API.
+	cd backend && DJANGO_SECRET_KEY=$${DJANGO_SECRET_KEY:-openapi-export} uv run python manage.py export_openapi --check
+
+# --- Frontend & Widgetbook ------------------------------------------------
+# Uses fvm (pinned by frontend/.fvmrc) when installed, so the Flutter version
+# matches CI. Override with FLUTTER=... / DART=...
+
+FVM          := $(shell command -v fvm 2>/dev/null)
+FLUTTER      ?= $(if $(FVM),fvm flutter,flutter)
+DART         ?= $(if $(FVM),fvm dart,dart)
+
+.PHONY: fe-check
+fe-check:  ## Frontend: dart format check + flutter analyze.
+	cd frontend && $(DART) format --output=none --set-exit-if-changed lib test tool
+	cd frontend && $(FLUTTER) analyze
+
+.PHONY: fe-test
+fe-test:  ## Frontend: run flutter tests (pass ARGS=... for extras).
+	cd frontend && $(FLUTTER) test $(ARGS)
+
+.PHONY: fe-test-cov
+fe-test-cov:  ## Frontend: tests + coverage gate (MIN_COVERAGE=<n> to override).
+	cd frontend && FLUTTER="$(FLUTTER)" DART="$(DART)" tool/coverage.sh $(ARGS)
+
+.PHONY: wb-check
+wb-check:  ## Widgetbook: format check, analyze, and use-case smoke tests.
+	cd frontend/widgetbook && $(DART) format --output=none --set-exit-if-changed lib test
+	cd frontend/widgetbook && $(FLUTTER) analyze
+	cd frontend/widgetbook && $(FLUTTER) test
+
+# --- Infra ----------------------------------------------------------------
+
+TERRAFORM    ?= terraform
+
+.PHONY: tf-check
+tf-check:  ## Terraform: fmt check + validate (no backend, no AWS creds needed).
+	cd infra && $(TERRAFORM) fmt -check -diff -recursive
+	cd infra && $(TERRAFORM) init -backend=false -input=false >/dev/null
+	cd infra && $(TERRAFORM) validate
+
+# --- CI parity ------------------------------------------------------------
+
+.PHONY: ci
+ci: lint format-check openapi-check test-cov fe-check fe-test-cov wb-check tf-check  ## Run every CI check locally (needs `make up`).
 
 .PHONY: health
 health:  ## Hit the /health endpoint from the host.

@@ -87,31 +87,26 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
     try {
       if (allocation.type == 'goal') {
-        final goals = await goalRepository.getGoals();
-        final goal = goals.firstWhere((g) => g.id == allocation.id);
-
-        if (event.subGoalDistribution != null &&
-            event.subGoalDistribution!.isNotEmpty) {
-          // Update each subgoal
-          for (var entry in event.subGoalDistribution!.entries) {
-            final subGoal = goal.subGoals.firstWhere(
-              (sg) => sg.id == entry.key,
-            );
-            await goalRepository.updateSubGoalAmount(
-              subGoal.id,
-              subGoal.currentAmount + entry.value,
+        // The backend rolls each allocation into the goal's progress (and the
+        // subgoal's, when sub_goal_id is set), so allocations are the only
+        // write needed. Patching subgoal amounts as well would count the
+        // money twice.
+        final distribution = event.subGoalDistribution ?? const {};
+        if (distribution.isNotEmpty) {
+          for (final entry in distribution.entries) {
+            if (entry.value <= 0) continue;
+            await goalRepository.insertAllocation(
+              allocation.id,
+              entry.value,
+              subGoalId: entry.key,
             );
           }
-          // The parent goal's current_amount is automatically updated by the DB trigger
         } else {
-          // Fallback if no distribution was provided (e.g., flat goal)
-          await goalRepository.updateGoalCurrentAmount(
+          await goalRepository.insertAllocation(
             allocation.id,
-            goal.currentAmount + allocation.amount,
+            allocation.amount,
           );
         }
-
-        await goalRepository.insertAllocation(allocation.id, allocation.amount);
       } else {
         final accounts = await accountRepository.getAccounts();
         final account = accounts.firstWhere((a) => a.id == allocation.id);

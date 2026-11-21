@@ -4,6 +4,7 @@ from django.conf import settings
 from django.test import Client
 from apps.users.models import User, Profile
 
+
 @pytest.mark.django_db
 def test_auth0_login_creates_new_user_and_returns_tokens():
     # Generate a mock Auth0 token signed with HS256 using SECRET_KEY
@@ -16,9 +17,7 @@ def test_auth0_login_creates_new_user_and_returns_tokens():
 
     client = Client()
     r = client.post(
-        "/api/v1/auth/auth0",
-        data={"token": mock_token},
-        content_type="application/json"
+        "/api/v1/auth/auth0", data={"token": mock_token}, content_type="application/json"
     )
     assert r.status_code == 200
     body = r.json()
@@ -26,7 +25,7 @@ def test_auth0_login_creates_new_user_and_returns_tokens():
     assert body["user"]["email"] == "new-auth0-user@example.com"
     assert body["user"]["full_name"] == "Auth0 User"
     assert body["user"]["avatar_url"] == "https://example.com/avatar.png"
-    
+
     # Check that database user was created
     user = User.objects.get(email="new-auth0-user@example.com")
     assert not user.has_usable_password()
@@ -52,9 +51,7 @@ def test_auth0_login_logs_in_existing_user(user):
 
     client = Client()
     r = client.post(
-        "/api/v1/auth/auth0",
-        data={"token": mock_token},
-        content_type="application/json"
+        "/api/v1/auth/auth0", data={"token": mock_token}, content_type="application/json"
     )
     assert r.status_code == 200
     body = r.json()
@@ -70,7 +67,7 @@ def test_auth0_login_fails_with_invalid_token():
     r = client.post(
         "/api/v1/auth/auth0",
         data={"token": "this-is-not-a-valid-token"},
-        content_type="application/json"
+        content_type="application/json",
     )
     assert r.status_code == 401
     assert r.json()["error"]["code"] == "auth_error"

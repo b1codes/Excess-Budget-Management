@@ -2,7 +2,11 @@ from ninja import Router
 from config.auth import JWTAuth
 from .schemas import ExpenseIn, ExpensePatch, ExpenseOut
 from .services import (
-    list_expenses, create_expense, get_expense, update_expense, delete_expense,
+    list_expenses,
+    create_expense,
+    get_expense,
+    update_expense,
+    delete_expense,
 )
 
 router = Router(tags=["expenses"], auth=JWTAuth())

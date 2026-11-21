@@ -6,6 +6,7 @@ used to trigger a signal. Operates on raw collection names — no dependency
 on any specific app's models.py or services.py, so this module can be
 built and tested before any of the 8 apps are converted.
 """
+
 from google.cloud import firestore
 from .firestore import get_client
 

@@ -30,11 +30,13 @@ class OvertimeSettings {
     );
   }
 
+  /// The PATCH body. The API's Decimal fields take strings with at most two
+  /// decimal places; a raw double such as 0.1 + 0.2 would be rejected.
   Map<String, dynamic> toJson() {
     return {
-      'hourly_base_rate': hourlyBaseRate,
-      'overtime_multiplier': overtimeMultiplier,
-      'estimated_tax_rate': estimatedTaxRate,
+      'hourly_base_rate': hourlyBaseRate.toStringAsFixed(2),
+      'overtime_multiplier': overtimeMultiplier.toStringAsFixed(2),
+      'estimated_tax_rate': estimatedTaxRate.toStringAsFixed(2),
     };
   }
 

@@ -114,6 +114,69 @@ the emulator runs fully offline against the dummy project ID in `.env.example`.
 
 Run `make logs-firestore` to tail the emulator's logs.
 
+## 🧪 Testing & CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every pull request, on pushes
+to `main`, and on demand. Each area has its own job, and each one has a matching
+`make` target so you can run the same check locally:
+
+| CI job | What it checks | Run locally |
+| --- | --- | --- |
+| Backend · lint | `ruff check` + `ruff format --check`, OpenAPI snapshot is current | `make lint format-check openapi-check` |
+| Backend · tests + coverage | pytest against the Firestore emulator, coverage gate | `make test-cov` (after `make up`) |
+| Frontend | `dart format`, `flutter analyze`, tests, coverage gate | `make fe-check fe-test-cov` |
+| Widgetbook | generated catalog is current, format, analyze, use-case smoke tests | `make wb-check` |
+| Infra | `terraform fmt -check` + `terraform validate` (no AWS credentials) | `make tf-check` |
+
+`make ci` runs all of them in sequence.
+
+**Coverage gates.** Both gates start just below the current baseline and only go up:
+
+- Backend: `fail_under` in `[tool.coverage.report]` in `backend/pyproject.toml`
+  (branch coverage over `apps/` and `config/`, excluding tests and migrations).
+- Frontend: `MIN_COVERAGE` in `frontend/tool/coverage.sh` (line coverage over
+  `lib/`, excluding generated `*.g.dart`). The script imports every library before
+  measuring, so files without tests count as 0% instead of being skipped.
+
+When a change raises coverage, raise the gate in the same PR.
+
+**API contract.** `backend/openapi.json` is the OpenAPI schema the API serves,
+committed so that API changes show up in review. After changing a schema or
+route, run `make openapi` (no stack needed) and commit the diff. CI fails if
+it's stale. Both sides are tested against it:
+
+- Backend: `apps/common/tests/test_openapi_snapshot.py` (snapshot is current and
+  every operation has a typed response) and `test_error_envelopes.py` (the error
+  bodies, which the schema doesn't describe).
+- Frontend: `frontend/test/contract/`. Every fixture in `api_fixtures.dart` must
+  match its response schema exactly (no extra keys). Every model must parse both
+  the fullest and the smallest payload its schema allows. Every repository call
+  is run against `ContractServer`, which rejects undocumented paths, methods and
+  query parameters, and request bodies that break their schema. Decimal fields
+  must be sent as strings ("12.50"), not JSON numbers.
+- Auth0: `apps/users/tests/test_auth0_provider_contract.py` verifies login
+  against Auth0's JWKS format and token claims.
+
+If a frontend contract test fails after an API change, update the client (and
+any fixtures) to the new shape. Don't loosen the checker.
+
+**Frontend test helpers** live in `frontend/test/helpers/`:
+
+- `api_fixtures.dart`: JSON shaped like the real API responses (checked against
+  `backend/openapi.json`). Money is a string such as `"100.00"` and `user_id` is
+  never sent. Build payloads from these rather than writing them by hand, so tests
+  catch parsing bugs.
+- `fake_api.dart`: `FakeApi`, a real `ApiClient` over a fake HTTP adapter. Queue
+  responses with `enqueue`, or answer by path with `route`, then assert on the
+  recorded `requests`.
+- `mocks.dart`: mocktail repository mocks and model builders for bloc tests.
+- `widget_harness.dart`: `pumpHarness` (the app theme plus providers) and
+  `MockBloc`s for the app-wide blocs.
+
+**Flutter version.** `frontend/.fvmrc` pins the Flutter SDK, and CI reads it. With
+[fvm](https://fvm.app) installed, the `make` targets use it automatically; otherwise
+they fall back to whatever `flutter` is on your `PATH`.
+
 ---
 
 ## 🗺️ Roadmap

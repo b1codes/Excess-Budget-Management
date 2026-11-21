@@ -147,11 +147,14 @@ class AllocationHistoryScreen extends StatelessWidget {
                           NumberFormat.currency(
                             symbol: r'$',
                           ).format(item.amount),
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
                         ),
                       ),
                     ),

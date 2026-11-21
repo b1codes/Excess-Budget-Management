@@ -128,9 +128,7 @@ class _AllocationCardState extends State<AllocationCard> {
                               Flexible(
                                 child: Text(
                                   widget.allocation.name,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
+                                  style: Theme.of(context).textTheme.titleLarge
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -163,13 +161,10 @@ class _AllocationCardState extends State<AllocationCard> {
                     const SizedBox(height: 4),
                     Text(
                       isGoal ? 'Savings Goal' : 'Account Deposit',
-                      style: Theme.of(context).textTheme.labelMedium
-                          ?.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                            letterSpacing: 1.2,
-                          ),
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        letterSpacing: 1.2,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -204,11 +199,14 @@ class _AllocationCardState extends State<AllocationCard> {
                                 color: color,
                               ),
                               const SizedBox(width: 8),
-                              Text(
-                                'Accept Suggestion',
-                                style: TextStyle(
-                                  color: color,
-                                  fontWeight: FontWeight.bold,
+                              Flexible(
+                                child: Text(
+                                  'Accept Suggestion',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: color,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],

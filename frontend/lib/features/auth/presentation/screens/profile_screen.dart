@@ -37,6 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadProfile() async {
     try {
       final profile = await _profileRepository.getProfile();
+      if (!mounted) return;
       setState(() {
         _profile = profile;
         _nameController.text = profile.fullName ?? '';
@@ -58,8 +59,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         fullName: _nameController.text.trim(),
       );
       await _profileRepository.updateProfile(updatedProfile);
-      setState(() => _profile = updatedProfile);
       if (!mounted) return;
+      setState(() => _profile = updatedProfile);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Profile updated')));
@@ -88,17 +89,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final avatarUrl = await _profileRepository.uploadAvatar(image);
       final updatedProfile = _profile!.copyWith(avatarUrl: avatarUrl);
       await _profileRepository.updateProfile(updatedProfile);
+      if (!mounted) return;
       setState(() {
         _profile = updatedProfile;
         _isUploading = false;
       });
-      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Avatar updated')));
     } catch (e) {
-      setState(() => _isUploading = false);
       if (!mounted) return;
+      setState(() => _isUploading = false);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error uploading avatar: $e')));
@@ -110,8 +111,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final updatedProfile = _profile!.copyWith(defaultSavingsRatio: val);
       await _profileRepository.updateDefaultSavingsRatio(val);
-      setState(() => _profile = updatedProfile);
       if (!mounted) return;
+      setState(() => _profile = updatedProfile);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Settings saved')));
@@ -122,6 +123,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ).showSnackBar(SnackBar(content: Text('Error saving: $e')));
     }
   }
+
+  /// The savings ratio as a whole percentage. Rounded, not truncated:
+  /// ratios like 0.8 aren't exact in floating point, and truncating
+  /// 100 * (1 - 0.8) gives 19.
+  int _savingsPercent() =>
+      ((_profile?.defaultSavingsRatio ?? 0.5) * 100).round();
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +158,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             if (_isUploading)
                               const Positioned.fill(
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             Positioned(
                               bottom: 0,
@@ -207,14 +216,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                       Text(
+                      Text(
                         'When you have no recent history, the AI will use this ratio to balance between savings and purchase goals.',
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
+                      const Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        spacing: 12,
+                        children: [
                           Text('Purchase Goals'),
                           Text('Savings Goals'),
                         ],
@@ -222,16 +234,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Slider(
                         value: _profile?.defaultSavingsRatio ?? 0.5,
                         onChanged: (val) => setState(() {
-                          _profile = _profile?.copyWith(defaultSavingsRatio: val);
+                          _profile = _profile?.copyWith(
+                            defaultSavingsRatio: val,
+                          );
                         }),
                         onChangeEnd: _saveRatio,
                         divisions: 10,
-                        label:
-                            '${((_profile?.defaultSavingsRatio ?? 0.5) * 100).toInt()}% Savings',
+                        label: '${_savingsPercent()}% Savings',
                       ),
                       Center(
                         child: Text(
-                          '${((1 - (_profile?.defaultSavingsRatio ?? 0.5)) * 100).toInt()}% Purchases / ${((_profile?.defaultSavingsRatio ?? 0.5) * 100).toInt()}% Savings',
+                          '${100 - _savingsPercent()}% Purchases / ${_savingsPercent()}% Savings',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),

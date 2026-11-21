@@ -1,147 +1,168 @@
-// Uses the same queue-based HttpClientAdapter pattern as account_repository_test.dart.
-
-import 'dart:convert';
-import 'dart:typed_data';
-
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:frontend/core/api/api_client.dart';
-import 'package:frontend/core/api/auth_token_store.dart';
+import 'package:frontend/core/api/api_exceptions.dart';
+import 'package:frontend/features/income/models/overtime_settings.dart';
 import 'package:frontend/features/income/repositories/income_repository.dart';
 
-class _MockTokenStore extends Mock implements AuthTokenStore {}
-
-class _QueueAdapter implements HttpClientAdapter {
-  final _queue = <ResponseBody>[];
-
-  void enqueue(int status, Object? body) {
-    _queue.add(
-      ResponseBody.fromString(
-        body != null ? jsonEncode(body) : '',
-        status,
-        headers: {
-          Headers.contentTypeHeader: [Headers.jsonContentType],
-        },
-      ),
-    );
-  }
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future? cancelFuture,
-  ) async {
-    assert(_queue.isNotEmpty, 'No more queued responses');
-    return _queue.removeAt(0);
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
-
-Map<String, dynamic> _incomeJson({
-  String id = 'inc-1',
-  String userId = 'user-1',
-  double amount = 200.0,
-  String? description = 'Freelance',
-  String dateReceived = '2024-03-20',
-  String createdAt = '2024-03-20T09:00:00Z',
-  String? accountId,
-  String? budgetCategoryId,
-}) => {
-  'id': id,
-  'user_id': userId,
-  'amount': amount,
-  'description': description,
-  'date_received': dateReceived,
-  'created_at': createdAt,
-  'account_id': accountId,
-  'budget_category_id': budgetCategoryId,
-};
+import '../../../helpers/api_fixtures.dart';
+import '../../../helpers/fake_api.dart';
 
 void main() {
-  late _QueueAdapter adapter;
-  late _MockTokenStore tokenStore;
-  late ApiClient apiClient;
-  late IncomeRepository repository;
+  late FakeApi api;
+  late IncomeRepository repo;
 
   setUp(() {
-    adapter = _QueueAdapter();
-    tokenStore = _MockTokenStore();
-
-    when(() => tokenStore.write(any(), any())).thenAnswer((_) async {});
-    when(() => tokenStore.readAccess()).thenAnswer((_) async => null);
-    when(() => tokenStore.readRefresh()).thenAnswer((_) async => null);
-    when(() => tokenStore.clear()).thenAnswer((_) async {});
-
-    final dio = Dio(BaseOptions(baseUrl: 'http://test'));
-    dio.httpClientAdapter = adapter;
-
-    apiClient = ApiClient(
-      dio: dio,
-      tokenStore: tokenStore,
-      onUnauthenticated: () async {},
-    );
-
-    repository = IncomeRepository(client: apiClient);
+    api = FakeApi();
+    repo = IncomeRepository(client: api.client);
   });
 
-  group('IncomeRepository.getIncome', () {
-    test('issues GET /income/extra and maps to List<Income>', () async {
-      adapter.enqueue(200, [
-        _incomeJson(id: 'inc-1', amount: 200.0, description: 'Freelance'),
-        _incomeJson(id: 'inc-2', amount: 50.0, description: 'Refund'),
+  group('getIncome', () {
+    test('GETs /income/extra and parses each entry', () async {
+      api.enqueue(200, [extraIncomeJson(), extraIncomeJson(id: 'inc-2')]);
+
+      final income = await repo.getIncome();
+
+      expect(api.last.method, 'GET');
+      expect(api.last.path, '/income/extra');
+      expect(income.map((i) => i.id), ['inc-1', 'inc-2']);
+      expect(income.first.amount, 250.0);
+    });
+
+    test('returns an empty list for an empty array', () async {
+      api.enqueue(200, <dynamic>[]);
+      expect(await repo.getIncome(), isEmpty);
+    });
+  });
+
+  test('deleteIncome DELETEs /income/extra/:id', () async {
+    api.enqueue(204);
+    await repo.deleteIncome('inc-3');
+    expect(api.last.method, 'DELETE');
+    expect(api.last.path, '/income/extra/inc-3');
+  });
+
+  group('bulkInsertExtraIncome', () {
+    test('POSTs one entry at a time without user_id', () async {
+      api.enqueue(201, extraIncomeJson(id: 'a'));
+      api.enqueue(201, extraIncomeJson(id: 'b'));
+
+      await repo.bulkInsertExtraIncome([
+        {'user_id': 'u', 'amount': '10.00', 'date_received': '2026-01-01'},
+        {'amount': '20.00', 'date_received': '2026-01-02'},
       ]);
 
-      final income = await repository.getIncome();
-
-      expect(income.length, 2);
-      expect(income[0].id, 'inc-1');
-      expect(income[0].amount, 200.0);
-      expect(income[1].id, 'inc-2');
-      expect(income[1].amount, 50.0);
+      expect(api.requests.map((r) => '${r.method} ${r.path}'), [
+        'POST /income/extra',
+        'POST /income/extra',
+      ]);
+      expect(api.requests[0].jsonBody, {
+        'amount': '10.00',
+        'date_received': '2026-01-01',
+      });
+      expect(api.requests[1].jsonBody['amount'], '20.00');
     });
 
-    test('returns empty list when server responds with empty array', () async {
-      adapter.enqueue(200, <dynamic>[]);
-
-      final income = await repository.getIncome();
-
-      expect(income, isEmpty);
-    });
-  });
-
-  group('IncomeRepository.deleteIncome', () {
-    test('issues DELETE /income/extra/:id', () async {
-      adapter.enqueue(204, null);
-
-      await expectLater(repository.deleteIncome('inc-1'), completes);
+    test('stops at the first failure', () async {
+      api.enqueue(500, {'detail': 'down'});
+      await expectLater(
+        repo.bulkInsertExtraIncome([
+          {'amount': '1.00'},
+          {'amount': '2.00'},
+        ]),
+        throwsA(isA<ApiServerException>()),
+      );
+      expect(api.requests, hasLength(1));
     });
   });
 
-  group('IncomeRepository.bulkInsertExtraIncome', () {
-    test('issues one POST per entry, stripping user_id', () async {
-      // Enqueue responses for 2 entries
-      adapter.enqueue(201, _incomeJson(id: 'inc-a', amount: 100.0));
-      adapter.enqueue(201, _incomeJson(id: 'inc-b', amount: 75.0));
+  group('overtime settings', () {
+    test('getOvertimeSettings GETs and parses the settings', () async {
+      api.enqueue(200, overtimeSettingsJson(hourlyBaseRate: '42.00'));
 
-      final entries = [
-        {
-          'user_id': 'should-be-stripped',
-          'amount': '100.00',
-          'date_received': '2024-03-20',
-        },
-        {
-          'user_id': 'should-be-stripped',
-          'amount': '75.00',
-          'date_received': '2024-03-21',
-        },
-      ];
+      final s = await repo.getOvertimeSettings();
 
-      // Should complete without throwing (uses up both queued responses)
-      await expectLater(repository.bulkInsertExtraIncome(entries), completes);
+      expect(api.last.path, '/income/overtime/settings');
+      expect(s.hourlyBaseRate, 42.0);
+      expect(s.overtimeMultiplier, 1.5);
+      expect(s.estimatedTaxRate, 0.25);
+    });
+
+    test('updateOvertimeSettings PATCHes the writable fields', () async {
+      api.enqueue(200, overtimeSettingsJson(hourlyBaseRate: '35.00'));
+
+      final saved = await repo.updateOvertimeSettings(
+        OvertimeSettings(
+          hourlyBaseRate: 35,
+          overtimeMultiplier: 2,
+          estimatedTaxRate: 0.3,
+        ),
+      );
+
+      expect(api.last.method, 'PATCH');
+      expect(api.last.path, '/income/overtime/settings');
+      expect(api.last.jsonBody, {
+        'hourly_base_rate': '35.00',
+        'overtime_multiplier': '2.00',
+        'estimated_tax_rate': '0.30',
+      });
+      expect(saved.hourlyBaseRate, 35.0);
+    });
+
+    test('a 422 from the settings endpoint surfaces as validation', () async {
+      api.enqueue(422, {'detail': 'tax rate must be 0..1'});
+      await expectLater(
+        repo.updateOvertimeSettings(
+          OvertimeSettings(
+            hourlyBaseRate: 1,
+            overtimeMultiplier: 1,
+            estimatedTaxRate: 5,
+          ),
+        ),
+        throwsA(isA<ApiValidationException>()),
+      );
+    });
+  });
+
+  group('getOvertimeProjection', () {
+    test('POSTs hours and contribution only, without a goal', () async {
+      api.enqueue(
+        200,
+        overtimeProjectionJson(
+          totalHoursNeeded: null,
+          monthsStandard: null,
+          monthsWithOvertime: null,
+          monthsSaved: null,
+        ),
+      );
+
+      final p = await repo.getOvertimeProjection(overtimeHoursPerWeek: 5);
+
+      expect(api.last.method, 'POST');
+      expect(api.last.path, '/income/overtime/projections');
+      expect(api.last.jsonBody, {
+        'overtime_hours_per_week': '5.00',
+        'standard_contribution': '0.00',
+      });
+      expect(p.netHourlyRate, 33.75);
+      expect(p.monthsSaved, isNull);
+    });
+
+    test('includes goal and subgoal ids when given', () async {
+      api.enqueue(200, overtimeProjectionJson());
+
+      final p = await repo.getOvertimeProjection(
+        overtimeHoursPerWeek: 10,
+        goalId: 'goal-1',
+        subgoalId: 'sub-1',
+        standardContribution: 200,
+      );
+
+      expect(api.last.jsonBody, {
+        'overtime_hours_per_week': '10.00',
+        'standard_contribution': '200.00',
+        'goal_id': 'goal-1',
+        'subgoal_id': 'sub-1',
+      });
+      expect(p.monthsSaved, 11.53);
     });
   });
 }

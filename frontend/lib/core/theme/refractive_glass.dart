@@ -98,7 +98,9 @@ class _RefractiveGlassState extends State<RefractiveGlass> {
     final fill = (isDark ? Colors.white : Colors.black).withValues(
       alpha: widget.fillOpacity,
     );
-    final border = isDark ? LLCColors.glassBorderDark : LLCColors.glassBorderLight;
+    final border = isDark
+        ? LLCColors.glassBorderDark
+        : LLCColors.glassBorderLight;
 
     return RepaintBoundary(
       child: ClipRRect(

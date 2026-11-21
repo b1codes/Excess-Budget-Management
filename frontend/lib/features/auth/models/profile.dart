@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:frontend/core/utils/json_parsing.dart';
 
 class UserProfile extends Equatable {
   final String id;
@@ -21,7 +22,7 @@ class UserProfile extends Equatable {
       email: json['email'] as String?,
       fullName: json['full_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
-      defaultSavingsRatio: (json['default_savings_ratio'] as num).toDouble(),
+      defaultSavingsRatio: parseAmount(json['default_savings_ratio']),
     );
   }
 

@@ -9,7 +9,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -44,38 +46,52 @@ ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-TEMPLATES = [{
-    "BACKEND": "django.template.backends.django.DjangoTemplates",
-    "DIRS": [],
-    "APP_DIRS": True,
-    "OPTIONS": {"context_processors": [
-        "django.contrib.auth.context_processors.auth",
-        "django.contrib.messages.context_processors.messages",
-    ]},
-}]
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ]
+        },
+    }
+]
 
 # Database — lightweight inline DATABASE_URL parser to avoid adding dj-database-url
 _db_url = os.environ.get("DATABASE_URL", "")
+
+
 def _parse_db(url: str) -> dict:
-    from urllib.parse import urlparse
+    from urllib.parse import unquote, urlparse
+
     u = urlparse(url)
+    # urlparse leaves percent-escapes in place; credentials containing @ : / etc.
+    # must be URL-encoded in DATABASE_URL, so decode them here.
     return {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": u.path.lstrip("/"),
-        "USER": u.username,
-        "PASSWORD": u.password,
+        "USER": unquote(u.username) if u.username else u.username,
+        "PASSWORD": unquote(u.password) if u.password else u.password,
         "HOST": u.hostname,
         "PORT": str(u.port or 5432),
     }
 
-DATABASES = {"default": _parse_db(_db_url)} if _db_url else {
-    "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}
-}
+
+DATABASES = (
+    {"default": _parse_db(_db_url)}
+    if _db_url
+    else {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
+)
 
 AUTH_USER_MODEL = "users.User"
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-     "OPTIONS": {"min_length": 8}},
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 8},
+    },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
 ]
 
@@ -97,7 +113,9 @@ PASSWORD_RESET_URL_TEMPLATE = os.environ.get(
 
 # JWT
 NINJA_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.environ.get("JWT_ACCESS_LIFETIME_MINUTES", "15"))),
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        minutes=int(os.environ.get("JWT_ACCESS_LIFETIME_MINUTES", "15"))
+    ),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.environ.get("JWT_REFRESH_LIFETIME_DAYS", "7"))),
     "SIGNING_KEY": os.environ.get("JWT_SIGNING_KEY", SECRET_KEY),
     "ROTATE_REFRESH_TOKENS": True,
@@ -113,4 +131,6 @@ AUTH0_AUDIENCE = os.environ.get("AUTH0_AUDIENCE", "")
 
 
 # CORS — handled by django-cors-headers when added in Task 4
-CORS_ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+CORS_ALLOWED_ORIGINS = [
+    o.strip() for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
+]

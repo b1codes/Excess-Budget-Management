@@ -40,7 +40,9 @@ class AccountCard extends StatelessWidget {
               ),
               subtitle: Text(
                 '\$${account.balance.toStringAsFixed(2)}',
-                style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+                style: const TextStyle(
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
               ),
             ),
           ),

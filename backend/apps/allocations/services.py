@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from google.cloud import firestore
 from apps.common.firestore import get_client
 from apps.common.firestore_helpers import get_owned_or_404_fs
-from apps.common.money import to_cents, from_cents
+from apps.common.money import to_cents, from_cents, normalize
 from apps.common.rollups import apply_allocation_effects
 from apps.common.exceptions import AppError
 from .models import GoalAllocation
@@ -54,24 +54,36 @@ def create_allocation(user, payload) -> GoalAllocation:
     allocation_id = uuid.uuid4()
     now = datetime.now(timezone.utc)
     amount_cents = to_cents(payload.amount)
-    get_client().collection(COLLECTION).document(str(allocation_id)).set({
-        "user_id": str(user.id),
-        "goal_id": str(payload.goal_id),
-        "sub_goal_id": sub_goal_id,
-        "account_id": account_id,
-        "amount": amount_cents,
-        "created_at": now,
-    })
+    get_client().collection(COLLECTION).document(str(allocation_id)).set(
+        {
+            "user_id": str(user.id),
+            "goal_id": str(payload.goal_id),
+            "sub_goal_id": sub_goal_id,
+            "account_id": account_id,
+            "amount": amount_cents,
+            "created_at": now,
+        }
+    )
 
     apply_allocation_effects(
         old=None,
-        new={"account_id": account_id, "goal_id": str(payload.goal_id),
-             "sub_goal_id": sub_goal_id, "amount_cents": amount_cents},
+        new={
+            "account_id": account_id,
+            "goal_id": str(payload.goal_id),
+            "sub_goal_id": sub_goal_id,
+            "amount_cents": amount_cents,
+        },
     )
 
-    return GoalAllocation(id=allocation_id, user_id=str(user.id), goal_id=payload.goal_id,
-                          sub_goal_id=payload.sub_goal_id, account_id=payload.account_id,
-                          amount=payload.amount, created_at=now)
+    return GoalAllocation(
+        id=allocation_id,
+        user_id=str(user.id),
+        goal_id=payload.goal_id,
+        sub_goal_id=payload.sub_goal_id,
+        account_id=payload.account_id,
+        amount=normalize(payload.amount),
+        created_at=now,
+    )
 
 
 def get_allocation(user, allocation_id) -> GoalAllocation:
@@ -107,6 +119,15 @@ def update_allocation(user, allocation_id, payload) -> GoalAllocation:
         updates["sub_goal_id"] = str(payload.sub_goal_id)
     elif "sub_goal_id" in fields_set and payload.sub_goal_id is None:
         updates["sub_goal_id"] = None
+    elif old_data.get("sub_goal_id") and effective_goal_id != old_data["goal_id"]:
+        # Moving to another goal without saying what happens to the subgoal
+        # would leave this allocation pointing at a subgoal of the old goal.
+        raise AppError(
+            code="subgoal_goal_mismatch",
+            message="Changing goal_id also requires sub_goal_id (a subgoal of the new goal, "
+            "or null).",
+            status_code=400,
+        )
 
     if payload.account_id is not None:
         get_owned_or_404_fs("accounts", payload.account_id, user)
@@ -124,8 +145,12 @@ def update_allocation(user, allocation_id, payload) -> GoalAllocation:
     new_data = doc_ref.get().to_dict()
     apply_allocation_effects(
         old=old_effect,
-        new={"account_id": new_data.get("account_id"), "goal_id": new_data["goal_id"],
-             "sub_goal_id": new_data.get("sub_goal_id"), "amount_cents": new_data["amount"]},
+        new={
+            "account_id": new_data.get("account_id"),
+            "goal_id": new_data["goal_id"],
+            "sub_goal_id": new_data.get("sub_goal_id"),
+            "amount_cents": new_data["amount"],
+        },
     )
 
     return _from_doc(doc_ref.get())
@@ -136,8 +161,12 @@ def delete_allocation(user, allocation_id) -> None:
     data = snapshot.to_dict()
     get_client().collection(COLLECTION).document(str(allocation_id)).delete()
     apply_allocation_effects(
-        old={"account_id": data.get("account_id"), "goal_id": data["goal_id"],
-             "sub_goal_id": data.get("sub_goal_id"), "amount_cents": data["amount"]},
+        old={
+            "account_id": data.get("account_id"),
+            "goal_id": data["goal_id"],
+            "sub_goal_id": data.get("sub_goal_id"),
+            "amount_cents": data["amount"],
+        },
         new=None,
     )
 
@@ -145,9 +174,12 @@ def delete_allocation(user, allocation_id) -> None:
 def recent_allocation_summary(user, days: int = 30) -> dict:
     since = datetime.now(timezone.utc) - timedelta(days=days)
     client = get_client()
-    docs = client.collection(COLLECTION).where("user_id", "==", str(user.id)).where(
-        "created_at", ">", since
-    ).stream()
+    docs = (
+        client.collection(COLLECTION)
+        .where("user_id", "==", str(user.id))
+        .where("created_at", ">", since)
+        .stream()
+    )
 
     totals = {"savings": 0, "purchase": 0}
     for doc in docs:

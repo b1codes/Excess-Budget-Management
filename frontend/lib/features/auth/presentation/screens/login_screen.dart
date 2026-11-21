@@ -37,9 +37,7 @@ class LoginScreen extends StatelessWidget {
                   child: SingleChildScrollView(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: RefractiveGlass(
-                        child: const LoginForm(),
-                      ),
+                      child: RefractiveGlass(child: const LoginForm()),
                     ),
                   ),
                 ),
@@ -54,7 +52,9 @@ class LoginScreen extends StatelessWidget {
                       child: Center(
                         child: Container(
                           constraints: const BoxConstraints(maxWidth: 480),
-                          child: const SingleChildScrollView(child: LoginForm()),
+                          child: const SingleChildScrollView(
+                            child: LoginForm(),
+                          ),
                         ),
                       ),
                     ),

@@ -89,12 +89,15 @@ class GoalCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '\$${goal.currentAmount.toStringAsFixed(2)} of \$${goal.targetAmount.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontFeatures: [FontFeature.tabularFigures()],
+                      Flexible(
+                        child: Text(
+                          '\$${goal.currentAmount.toStringAsFixed(2)} of \$${goal.targetAmount.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Text(
                         goal.category.toUpperCase(),
                         style: Theme.of(context).textTheme.labelSmall,

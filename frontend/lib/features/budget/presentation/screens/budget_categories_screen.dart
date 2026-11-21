@@ -89,8 +89,11 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
                           children: [
                             Text(
                               'Total Budget Allocation',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                   ),
                             ),
                             const SizedBox(height: 8),
@@ -103,16 +106,28 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
                                 children: [
                                   Text(
                                     '\$${totalSpent.toStringAsFixed(0)}',
-                                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .displayMedium
+                                        ?.copyWith(
                                           fontWeight: FontWeight.bold,
-                                          fontFeatures: const [FontFeature.tabularFigures()],
+                                          fontFeatures: const [
+                                            FontFeature.tabularFigures(),
+                                          ],
                                         ),
                                   ),
                                   Text(
                                     ' / \$${totalBudget.toStringAsFixed(0)}',
-                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                          fontFeatures: const [FontFeature.tabularFigures()],
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                          fontFeatures: const [
+                                            FontFeature.tabularFigures(),
+                                          ],
                                         ),
                                   ),
                                 ],
@@ -124,7 +139,9 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
                               child: LinearProgressIndicator(
                                 value: overallPercent,
                                 minHeight: 8,
-                                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
                                 color: overallPercent > 0.9
                                     ? Colors.redAccent
                                     : Theme.of(context).colorScheme.primary,
@@ -231,6 +248,9 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        // The tab shell keeps every visited tab mounted, so each tab's FAB
+        // needs its own hero tag or route transitions find duplicates.
+        heroTag: 'budget_fab',
         onPressed: () => _showCategoryForm(),
         icon: const Icon(Icons.add),
         label: const Text('Add Category'),

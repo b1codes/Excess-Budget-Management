@@ -40,6 +40,7 @@ class TransactionsExpensesTab extends StatelessWidget {
               itemBuilder: (context, index) {
                 final expense = expenses[index];
                 return TransactionCard(
+                  id: expense.id,
                   title: expense.description ?? 'Expense',
                   amount: expense.amount,
                   date: expense.date,

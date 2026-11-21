@@ -2,7 +2,13 @@ class AppError(Exception):
     status_code = 400
     code = "app_error"
 
-    def __init__(self, message: str = "", details=None, code: str | None = None, status_code: int | None = None):
+    def __init__(
+        self,
+        message: str = "",
+        details=None,
+        code: str | None = None,
+        status_code: int | None = None,
+    ):
         self.message = message or self.code
         self.details = details
         if code is not None:

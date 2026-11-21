@@ -25,6 +25,17 @@ class _OverviewTabState extends State<OverviewTab> {
   final TextEditingController _amountController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Load the metrics on open. Pull-to-refresh was the only other trigger,
+    // and it isn't available with a mouse or trackpad.
+    final bloc = context.read<DashboardBloc>();
+    if (bloc.state is DashboardInitial) {
+      bloc.add(DashboardInitialDataRequested());
+    }
+  }
+
+  @override
   void dispose() {
     _amountController.dispose();
     super.dispose();
@@ -153,6 +164,9 @@ class _OverviewTabState extends State<OverviewTab> {
               ? AppBar(title: const Text('Overview'))
               : null,
           floatingActionButton: FloatingActionButton.extended(
+            // The tab shell keeps every visited tab mounted, so each tab's FAB
+            // needs its own hero tag or route transitions find duplicates.
+            heroTag: 'overview_fab',
             onPressed: () => context.go('/bulk-entry'),
             icon: const Icon(Icons.library_add),
             label: const Text('Bulk Entry'),
@@ -195,9 +209,7 @@ class _OverviewTabState extends State<OverviewTab> {
                       else if (state is DashboardError)
                         Center(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 40,
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 40),
                             child: Text(
                               'Error: ${state.message}',
                               style: const TextStyle(color: Colors.red),
@@ -267,11 +279,7 @@ class _OverviewTabState extends State<OverviewTab> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.auto_awesome,
-                  color: colorScheme.primary,
-                  size: 20,
-                ),
+                Icon(Icons.auto_awesome, color: colorScheme.primary, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'AI Analysis',
@@ -286,9 +294,9 @@ class _OverviewTabState extends State<OverviewTab> {
             const SizedBox(height: 16),
             Text(
               'How much do you want to allocate?',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             Row(
@@ -336,9 +344,7 @@ class _OverviewTabState extends State<OverviewTab> {
               onPressed: () => _showManualAllocation(goals),
               icon: const Icon(Icons.add_circle_outline, size: 18),
               label: const Text('Perform Manual Allocation'),
-              style: TextButton.styleFrom(
-                foregroundColor: colorScheme.primary,
-              ),
+              style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
             ),
           ],
         ),
@@ -376,6 +382,18 @@ class _OverviewTabState extends State<OverviewTab> {
             ),
           ],
         ),
+        if (state.result.reasoning.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            state.result.reasoning,
+            key: const Key('suggestion-reasoning'),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -486,13 +504,17 @@ class _OverviewTabState extends State<OverviewTab> {
             ? 3
             : (constraints.maxWidth > 600 ? 2 : 1);
 
-        return GridView.count(
+        // A fixed row height rather than an aspect ratio: narrow cells got
+        // too short for the Goal Progress card's extra lines.
+        return GridView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 2.2,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            mainAxisExtent: 170,
+          ),
           children: [
             MetricCard(
               title: 'Net Worth',
@@ -514,8 +536,12 @@ class _OverviewTabState extends State<OverviewTab> {
                     child: LinearProgressIndicator(
                       value: budgetProgress,
                       minHeight: 6,
-                      backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                      valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
+                      valueColor: AlwaysStoppedAnimation(
+                        Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                   ),
                 ],
@@ -534,8 +560,12 @@ class _OverviewTabState extends State<OverviewTab> {
                     child: LinearProgressIndicator(
                       value: goalProgress,
                       minHeight: 6,
-                      backgroundColor: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
-                      valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.tertiary),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.tertiary.withValues(alpha: 0.1),
+                      valueColor: AlwaysStoppedAnimation(
+                        Theme.of(context).colorScheme.tertiary,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),

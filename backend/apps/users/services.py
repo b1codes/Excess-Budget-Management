@@ -83,12 +83,14 @@ def confirm_password_reset(token: str, new_password: str) -> None:
 
 def authenticate_auth0_token(token: str) -> User:
     import jwt
+
     try:
         domain = getattr(settings, "AUTH0_DOMAIN", "")
         audience = getattr(settings, "AUTH0_AUDIENCE", "")
-        
+
         if domain and not settings.DEBUG:
             from jwt import PyJWKClient
+
             jwks_url = f"https://{domain}/.well-known/jwks.json"
             jwks_client = PyJWKClient(jwks_url)
             signing_key = jwks_client.get_signing_key_from_jwt(token)
@@ -97,24 +99,24 @@ def authenticate_auth0_token(token: str) -> User:
                 signing_key.key,
                 algorithms=["RS256"],
                 audience=audience,
-                issuer=f"https://{domain}/"
+                issuer=f"https://{domain}/",
             )
         else:
             try:
                 payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
             except Exception:
                 payload = jwt.decode(token, options={"verify_signature": False})
-                
+
     except Exception as e:
         raise AuthError(f"Invalid Auth0 token: {str(e)}")
-        
+
     email = payload.get("email")
     if not email:
         raise AuthError("Auth0 token does not contain an email address.")
-        
+
     name = payload.get("name") or payload.get("nickname") or ""
     picture = payload.get("picture") or ""
-    
+
     with transaction.atomic():
         user, created = User.objects.get_or_create(email=email)
         if created:
@@ -132,6 +134,5 @@ def authenticate_auth0_token(token: str) -> User:
                 updated = True
             if updated:
                 profile.save()
-                
-    return user
 
+    return user

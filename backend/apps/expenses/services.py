@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 from google.cloud import firestore
 from apps.common.firestore import get_client
 from apps.common.firestore_helpers import get_owned_or_404_fs
-from apps.common.money import to_cents, from_cents
+from apps.common.money import to_cents, from_cents, normalize
 from apps.common.rollups import apply_expense_effects
 from .models import Expense
 
@@ -45,25 +45,37 @@ def create_expense(user, payload) -> Expense:
     now = datetime.now(timezone.utc)
     amount_cents = to_cents(payload.amount)
     account_id = str(payload.account_id) if payload.account_id else None
-    get_client().collection(COLLECTION).document(str(expense_id)).set({
-        "user_id": str(user.id),
-        "budget_category_id": str(payload.budget_category_id),
-        "account_id": account_id,
-        "amount": amount_cents,
-        "description": payload.description,
-        "date": payload.date.isoformat(),
-        "created_at": now,
-    })
+    get_client().collection(COLLECTION).document(str(expense_id)).set(
+        {
+            "user_id": str(user.id),
+            "budget_category_id": str(payload.budget_category_id),
+            "account_id": account_id,
+            "amount": amount_cents,
+            "description": payload.description,
+            "date": payload.date.isoformat(),
+            "created_at": now,
+        }
+    )
 
     apply_expense_effects(
         old=None,
-        new={"account_id": account_id, "budget_category_id": str(payload.budget_category_id),
-             "amount_cents": amount_cents},
+        new={
+            "account_id": account_id,
+            "budget_category_id": str(payload.budget_category_id),
+            "amount_cents": amount_cents,
+        },
     )
 
-    return Expense(id=expense_id, user_id=str(user.id), budget_category_id=payload.budget_category_id,
-                   account_id=payload.account_id, amount=payload.amount,
-                   description=payload.description, date=payload.date, created_at=now)
+    return Expense(
+        id=expense_id,
+        user_id=str(user.id),
+        budget_category_id=payload.budget_category_id,
+        account_id=payload.account_id,
+        amount=normalize(payload.amount),
+        description=payload.description,
+        date=payload.date,
+        created_at=now,
+    )
 
 
 def get_expense(user, expense_id) -> Expense:
@@ -104,8 +116,11 @@ def update_expense(user, expense_id, payload) -> Expense:
     new_data = doc_ref.get().to_dict()
     apply_expense_effects(
         old=old_effect,
-        new={"account_id": new_data.get("account_id"), "budget_category_id": new_data["budget_category_id"],
-             "amount_cents": new_data["amount"]},
+        new={
+            "account_id": new_data.get("account_id"),
+            "budget_category_id": new_data["budget_category_id"],
+            "amount_cents": new_data["amount"],
+        },
     )
 
     return _from_doc(doc_ref.get())
@@ -116,7 +131,10 @@ def delete_expense(user, expense_id) -> None:
     data = snapshot.to_dict()
     get_client().collection(COLLECTION).document(str(expense_id)).delete()
     apply_expense_effects(
-        old={"account_id": data.get("account_id"), "budget_category_id": data["budget_category_id"],
-             "amount_cents": data["amount"]},
+        old={
+            "account_id": data.get("account_id"),
+            "budget_category_id": data["budget_category_id"],
+            "amount_cents": data["amount"],
+        },
         new=None,
     )

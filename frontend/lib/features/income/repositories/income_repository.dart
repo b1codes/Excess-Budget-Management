@@ -54,9 +54,10 @@ class IncomeRepository {
     String? subgoalId,
     double standardContribution = 0.0,
   }) async {
+    // Decimal fields go as two-decimal strings, so 1/3 h isn't rejected.
     final body = {
-      'overtime_hours_per_week': overtimeHoursPerWeek,
-      'standard_contribution': standardContribution,
+      'overtime_hours_per_week': overtimeHoursPerWeek.toStringAsFixed(2),
+      'standard_contribution': standardContribution.toStringAsFixed(2),
       'goal_id': ?goalId,
       'subgoal_id': ?subgoalId,
     };
