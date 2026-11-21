@@ -14,7 +14,9 @@ def _sum(items, attr) -> Decimal:
 def dashboard_summary(user) -> dict:
     accounts = list_accounts(user)
     goals = list_goals(user)
-    categories = list_categories(user)
+    # Income categories track money coming in against a target, so they
+    # aren't part of the budget.
+    categories = [c for c in list_categories(user) if c.category_type == "expense"]
 
     return {
         "total_balance": _sum(accounts, "balance"),

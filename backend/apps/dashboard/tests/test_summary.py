@@ -27,7 +27,6 @@ def test_summary_tracks_live_rollups(api, make):
     account = make.account(balance="100.00")
     make.account(balance="0.10")
     category = make.category(limit_amount="300.00")
-    make.category(name="Salary", limit_amount="50.00", category_type="income")
     goal = make.goal(target_amount="1000.00")
     make.expense(category["id"], amount="20.00", account_id=account["id"])
     make.allocation(goal["id"], amount="30.00", account_id=account["id"])
@@ -36,6 +35,21 @@ def test_summary_tracks_live_rollups(api, make):
         "total_balance": "50.10",
         "goals_total_target": "1000.00",
         "goals_total_current": "30.00",
-        "budgets_total_limit": "350.00",
+        "budgets_total_limit": "300.00",
         "budgets_total_spent": "20.00",
     }
+
+
+def test_budget_totals_leave_out_income_categories(api, make):
+    # Regression: income categories were summed in too, so an income target
+    # counted as budget and income received counted as money spent (found
+    # by the E2E suite, where $250 of income showed as $250 spent).
+    groceries = make.category(limit_amount="300.00")
+    side_gigs = make.category(name="Side gigs", limit_amount="500.00", category_type="income")
+    make.expense(groceries["id"], amount="20.00")
+    make.extra_income(amount="250.00", budget_category_id=side_gigs["id"])
+
+    summary = make.get("/dashboard/summary")
+
+    assert summary["budgets_total_limit"] == "300.00"
+    assert summary["budgets_total_spent"] == "20.00"
