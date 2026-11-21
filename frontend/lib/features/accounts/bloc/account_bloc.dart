@@ -38,6 +38,10 @@ abstract class AccountEvent extends Equatable {
 
 class LoadAccounts extends AccountEvent {}
 
+/// Stops polling and forgets the accounts, e.g. on sign-out, so the next
+/// user never sees the previous user's list.
+class ClearAccounts extends AccountEvent {}
+
 class AddAccount extends AccountEvent {
   final String name;
   final double balance;
@@ -97,7 +101,18 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
       );
     });
 
+    on<ClearAccounts>((event, emit) {
+      // Emit before awaiting anything, so a load queued right behind this
+      // isn't overtaken.
+      final polling = _subscription;
+      _subscription = null;
+      emit(AccountInitial());
+      return polling?.cancel();
+    });
+
     on<_UpdateAccounts>((event, emit) {
+      // A poll that was already in flight when the accounts were cleared.
+      if (state is AccountInitial) return;
       emit(AccountLoaded(event.accounts));
     });
 

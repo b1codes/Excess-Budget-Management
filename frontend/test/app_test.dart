@@ -4,7 +4,12 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frontend/features/accounts/bloc/account_bloc.dart';
+import 'package:frontend/features/budget/bloc/budget_bloc.dart';
+import 'package:frontend/features/dashboard/bloc/dashboard_bloc.dart';
+import 'package:frontend/features/dashboard/bloc/dashboard_state.dart';
 import 'package:frontend/core/api/api_exceptions.dart';
 import 'package:frontend/core/router.dart';
 import 'package:frontend/features/auth/bloc/auth_bloc.dart';
@@ -136,6 +141,58 @@ void main() {
     expect(error, isA<ApiAuthException>());
     expect(authBloc.state, isA<AuthUnauthenticated>());
     expect(find.byType(LoginScreen), findsOneWidget);
+  });
+
+  Finder navTo(String label) => find.descendant(
+    of: find.byType(NavigationRail),
+    matching: find.text(label),
+  );
+
+  // Regression: the app-wide blocs outlived the session, so the next user to
+  // sign in saw the previous user's overview, and the old polls kept going
+  // (found by the E2E suite).
+  testWidgets('signing out clears the app-wide blocs', (tester) async {
+    signedIn = true;
+    final (app: _, :authBloc) = await pumpApp(tester);
+    BuildContext ctx() => tester.element(find.byType(Navigator).first);
+    expect(ctx().read<DashboardBloc>().state, isA<DashboardDataLoaded>());
+
+    await tester.tap(navTo('Accounts'));
+    await tester.pumpAndSettle();
+    expect(ctx().read<AccountBloc>().state, isA<AccountLoaded>());
+
+    authBloc.add(AuthLogoutRequested());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(ctx().read<DashboardBloc>().state, isA<DashboardInitial>());
+    expect(ctx().read<AccountBloc>().state, isA<AccountInitial>());
+    expect(ctx().read<BudgetBloc>().state, isA<BudgetInitial>());
+
+    // No poll is left running: nothing is requested while signed out.
+    final before = adapter.requests.length;
+    await tester.pump(const Duration(minutes: 2));
+    expect(adapter.requests.length, before);
+  });
+
+  // Regression: the overview loaded its metrics once and stayed mounted, so
+  // changes made in other tabs never showed (found by the E2E suite).
+  testWidgets('going back to the overview reloads its metrics', (tester) async {
+    signedIn = true;
+    await pumpApp(tester);
+    int allocationLoads() =>
+        adapter.requests.where((r) => r.path == '/allocations').length;
+    final loads = allocationLoads();
+
+    await tester.tap(navTo('Overview'));
+    await tester.pumpAndSettle();
+    expect(allocationLoads(), loads, reason: 'already on the overview');
+
+    await tester.tap(navTo('Accounts'));
+    await tester.pumpAndSettle();
+    await tester.tap(navTo('Overview'));
+    await tester.pumpAndSettle();
+    expect(allocationLoads(), loads + 1);
   });
 
   group('authRedirect', () {

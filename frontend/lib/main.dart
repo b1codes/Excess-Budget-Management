@@ -12,11 +12,13 @@ import 'features/accounts/bloc/account_bloc.dart';
 import 'features/accounts/repositories/account_repository.dart';
 import 'features/auth/bloc/auth_bloc.dart';
 import 'features/auth/bloc/auth_event.dart';
+import 'features/auth/bloc/auth_state.dart';
 import 'features/auth/repositories/profile_repository.dart';
 import 'features/auth/services/auth_service.dart';
 import 'features/budget/bloc/budget_bloc.dart';
 import 'features/budget/repositories/budget_repository.dart';
 import 'features/dashboard/bloc/dashboard_bloc.dart';
+import 'features/dashboard/bloc/dashboard_event.dart';
 import 'features/dashboard/repositories/suggestion_repository.dart';
 import 'features/goals/repositories/goal_repository.dart';
 
@@ -107,15 +109,33 @@ class _BudgetAppState extends State<BudgetApp> {
             ),
           ),
         ],
-        child: MaterialApp.router(
-          title: 'Excess Budget Management',
-          theme: LLCTheme.light(),
-          darkTheme: LLCTheme.dark(),
-          routerConfig: _router,
-          builder: (context, child) =>
-              MeshBackdrop(child: child ?? const SizedBox.shrink()),
+        child: BlocListener<AuthBloc, AuthState>(
+          listenWhen: (previous, current) =>
+              current is AuthUnauthenticated &&
+              previous is! AuthUnauthenticated,
+          listener: (context, _) => clearSessionData(context),
+          child: MaterialApp.router(
+            title: 'Excess Budget Management',
+            theme: LLCTheme.light(),
+            darkTheme: LLCTheme.dark(),
+            routerConfig: _router,
+            builder: (context, child) =>
+                MeshBackdrop(child: child ?? const SizedBox.shrink()),
+          ),
         ),
       ),
     );
   }
+}
+
+/// Drops everything the app-wide blocs loaded for the signed-out user and
+/// stops their polling.
+///
+/// Regression: these blocs outlive a session. After a sign-out, the next
+/// user to sign in on the device saw the previous user's net worth and goals
+/// on the overview, and the old account and budget polls kept running.
+void clearSessionData(BuildContext context) {
+  context.read<DashboardBloc>().add(DashboardResetRequested());
+  context.read<AccountBloc>().add(ClearAccounts());
+  context.read<BudgetBloc>().add(ClearBudgets());
 }

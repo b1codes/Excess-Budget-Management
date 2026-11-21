@@ -26,17 +26,39 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     required this.budgetRepository,
   }) : super(DashboardInitial()) {
     on<DashboardInitialDataRequested>(_onDashboardInitialDataRequested);
+    on<DashboardRefreshRequested>(_onDashboardRefreshRequested);
     on<GenerateSuggestionsRequested>(_onGenerateSuggestionsRequested);
     on<AcceptSuggestionRequested>(_onAcceptSuggestionRequested);
     on<DashboardResetRequested>(_onDashboardResetRequested);
   }
+
+  /// Bumped by [DashboardResetRequested]. A load that started before the
+  /// reset (for the previous user) checks it and drops its result.
+  int _generation = 0;
 
   Future<void> _onDashboardInitialDataRequested(
     DashboardInitialDataRequested event,
     Emitter<DashboardState> emit,
   ) async {
     emit(DashboardLoading());
+    await _loadData(emit);
+  }
 
+  Future<void> _onDashboardRefreshRequested(
+    DashboardRefreshRequested event,
+    Emitter<DashboardState> emit,
+  ) async {
+    final current = state;
+    if (current is DashboardSuggestionsLoaded || current is DashboardLoading) {
+      return;
+    }
+    // Keep the current figures on screen while the fresh ones load.
+    if (current is! DashboardDataLoaded) emit(DashboardLoading());
+    await _loadData(emit);
+  }
+
+  Future<void> _loadData(Emitter<DashboardState> emit) async {
+    final generation = _generation;
     try {
       final results = await Future.wait([
         accountRepository.getAccounts(),
@@ -44,6 +66,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         goalRepository.getGoals(),
         goalRepository.getAllocations(),
       ]);
+      if (generation != _generation) return;
 
       emit(
         DashboardDataLoaded(
@@ -54,6 +77,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         ),
       );
     } catch (e) {
+      if (generation != _generation) return;
       emit(DashboardError(e.toString()));
     }
   }
@@ -117,9 +141,10 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         );
       }
 
-      // Optionally re-fetch suggestions or refresh state
-      // For now, let's trigger a refresh of the suggestions to show updated progress
-      // (This requires another GenerateSuggestionsRequested dispatch or similar)
+      // A manual allocation from the metrics view changes Goal Progress, so
+      // reload it. A suggestion list stays as it is, so the user can accept
+      // the rest.
+      if (state is DashboardDataLoaded) add(DashboardRefreshRequested());
     } catch (e) {
       emit(DashboardError(e.toString()));
     }
@@ -129,6 +154,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     DashboardResetRequested event,
     Emitter<DashboardState> emit,
   ) {
+    _generation++;
     emit(DashboardInitial());
   }
 }

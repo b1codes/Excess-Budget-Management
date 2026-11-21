@@ -120,4 +120,45 @@ void main() {
       },
     );
   });
+
+  // Regression: nothing stopped the poll on sign-out, so it kept requesting
+  // the previous user's accounts (found by the E2E suite).
+  group('ClearAccounts', () {
+    blocTest<AccountBloc, AccountState>(
+      'stops polling and forgets the accounts',
+      build: () => bloc,
+      act: (bloc) async {
+        bloc.add(LoadAccounts());
+        await Future.delayed(Duration.zero);
+        controller.add(tAccounts);
+        await Future.delayed(Duration.zero);
+        bloc.add(ClearAccounts());
+        await Future.delayed(Duration.zero);
+        // The old subscription is gone, so this is never seen.
+        controller.add(tAccounts);
+      },
+      expect: () => [
+        AccountLoading(),
+        AccountLoaded(tAccounts),
+        AccountInitial(),
+      ],
+      verify: (_) => expect(controller.hasListener, isFalse),
+    );
+
+    blocTest<AccountBloc, AccountState>(
+      'can load again afterwards',
+      build: () => bloc,
+      act: (bloc) async {
+        bloc.add(ClearAccounts());
+        bloc.add(LoadAccounts());
+        await Future.delayed(Duration.zero);
+        controller.add(tAccounts);
+      },
+      expect: () => [
+        AccountInitial(),
+        AccountLoading(),
+        AccountLoaded(tAccounts),
+      ],
+    );
+  });
 }

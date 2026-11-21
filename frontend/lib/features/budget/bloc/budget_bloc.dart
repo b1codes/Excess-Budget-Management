@@ -38,6 +38,10 @@ abstract class BudgetEvent extends Equatable {
 
 class LoadBudgets extends BudgetEvent {}
 
+/// Stops polling and forgets the categories, e.g. on sign-out, so the next
+/// user never sees the previous user's budget.
+class ClearBudgets extends BudgetEvent {}
+
 class AddBudgetCategory extends BudgetEvent {
   final String name;
   final double limitAmount;
@@ -118,7 +122,18 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
       );
     });
 
+    on<ClearBudgets>((event, emit) {
+      // Emit before awaiting anything, so a load queued right behind this
+      // isn't overtaken.
+      final polling = _subscription;
+      _subscription = null;
+      emit(BudgetInitial());
+      return polling?.cancel();
+    });
+
     on<_UpdateBudgets>((event, emit) {
+      // A poll that was already in flight when the budget was cleared.
+      if (state is BudgetInitial) return;
       emit(BudgetLoaded(event.categories));
     });
 

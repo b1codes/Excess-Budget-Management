@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/adaptive_scaffold.dart';
+import '../../bloc/dashboard_bloc.dart';
+import '../../bloc/dashboard_event.dart';
 
 class DashboardScreen extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
@@ -40,7 +43,14 @@ class DashboardScreen extends StatelessWidget {
     return AdaptiveScaffold(
       navigationShell: navigationShell,
       currentIndex: navigationShell.currentIndex,
-      onDestinationSelected: (index) => navigationShell.goBranch(index),
+      onDestinationSelected: (index) {
+        // The overview stays mounted while other tabs are open, so reload
+        // its metrics to pick up anything changed there.
+        if (index == 0 && navigationShell.currentIndex != 0) {
+          context.read<DashboardBloc>().add(DashboardRefreshRequested());
+        }
+        navigationShell.goBranch(index);
+      },
       destinations: _destinations,
     );
   }

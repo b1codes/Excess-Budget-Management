@@ -77,4 +77,44 @@ void main() {
       ],
     );
   });
+  // Regression: nothing stopped the poll on sign-out, so it kept requesting
+  // the previous user's budget (found by the E2E suite).
+  group('ClearBudgets', () {
+    blocTest<BudgetBloc, BudgetState>(
+      'stops polling and forgets the categories',
+      build: () => bloc,
+      act: (bloc) async {
+        bloc.add(LoadBudgets());
+        await Future.delayed(Duration.zero);
+        controller.add(tCategories);
+        await Future.delayed(Duration.zero);
+        bloc.add(ClearBudgets());
+        await Future.delayed(Duration.zero);
+        // The old subscription is gone, so this is never seen.
+        controller.add(tCategories);
+      },
+      expect: () => [
+        BudgetLoading(),
+        BudgetLoaded(tCategories),
+        BudgetInitial(),
+      ],
+      verify: (_) => expect(controller.hasListener, isFalse),
+    );
+
+    blocTest<BudgetBloc, BudgetState>(
+      'can load again afterwards',
+      build: () => bloc,
+      act: (bloc) async {
+        bloc.add(ClearBudgets());
+        bloc.add(LoadBudgets());
+        await Future.delayed(Duration.zero);
+        controller.add(tCategories);
+      },
+      expect: () => [
+        BudgetInitial(),
+        BudgetLoading(),
+        BudgetLoaded(tCategories),
+      ],
+    );
+  });
 }
