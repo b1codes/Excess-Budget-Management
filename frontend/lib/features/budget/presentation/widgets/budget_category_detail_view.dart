@@ -31,48 +31,66 @@ class BudgetCategoryDetailView extends StatelessWidget {
       create: (context) =>
           BudgetCategoryDetailBloc(repository: context.read<BudgetRepository>())
             ..add(LoadBudgetCategoryDetail(category)),
-      child: BlocBuilder<BudgetCategoryDetailBloc, BudgetCategoryDetailState>(
-        builder: (context, state) {
-          final currentCategory = state.category ?? category;
-          final categoryColor = _parseColor(currentCategory.colorHex);
-          final categoryIcon = currentCategory.iconCode != null
-              ? IconData(currentCategory.iconCode!, fontFamily: 'MaterialIcons')
-              : Icons.category;
-
-          return Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () => _showEditForm(context, currentCategory),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.delete_outline,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                  onPressed: () => _showDeleteDialog(context, currentCategory),
-                ),
-              ],
-            ),
-            body: state.isLoading && state.category == null
-                ? const Center(child: CircularProgressIndicator())
-                : _buildContent(
-                    context,
-                    state,
-                    currentCategory,
-                    categoryColor,
-                    categoryIcon,
-                  ),
-          );
+      // Follow the saved category (edits from this view, or the list's poll)
+      // so the header and the expense/income list stay current.
+      child: BlocListener<BudgetBloc, BudgetState>(
+        listener: (context, budgetState) {
+          if (budgetState is! BudgetLoaded) return;
+          final fresh = budgetState.categories
+              .where((c) => c.id == category.id)
+              .firstOrNull;
+          final detail = context.read<BudgetCategoryDetailBloc>();
+          if (fresh != null && fresh != detail.state.category) {
+            detail.add(LoadBudgetCategoryDetail(fresh));
+          }
         },
+        child: BlocBuilder<BudgetCategoryDetailBloc, BudgetCategoryDetailState>(
+          builder: (context, state) {
+            final currentCategory = state.category ?? category;
+            final categoryColor = _parseColor(currentCategory.colorHex);
+            final categoryIcon = currentCategory.iconCode != null
+                ? IconData(
+                    currentCategory.iconCode!,
+                    fontFamily: 'MaterialIcons',
+                  )
+                : Icons.category;
+
+            return Scaffold(
+              backgroundColor: Colors.transparent,
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => _showEditForm(context, currentCategory),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    onPressed: () =>
+                        _showDeleteDialog(context, currentCategory),
+                  ),
+                ],
+              ),
+              body: state.isLoading && state.category == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildContent(
+                      context,
+                      state,
+                      currentCategory,
+                      categoryColor,
+                      categoryIcon,
+                    ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -384,14 +402,9 @@ class BudgetCategoryDetailView extends StatelessWidget {
         ),
         child: BudgetCategoryFormSheet(category: category),
       ),
-    ).then((_) {
-      // After editing, refresh details
-      if (context.mounted) {
-        context.read<BudgetCategoryDetailBloc>().add(
-          RefreshBudgetCategoryDetail(category.id, category.type),
-        );
-      }
-    });
+    );
+    // No refresh here: the BudgetBloc listener in build() reloads the detail
+    // once the edit has been saved.
   }
 
   void _showDeleteDialog(BuildContext context, BudgetCategory category) {
