@@ -19,7 +19,8 @@ Map<String, dynamic> userJson({
   String id = '42',
   String email = 'user@example.com',
   String? fullName = 'Test User',
-  String? avatarUrl,
+  // What the API sends for a user with no avatar.
+  String? avatarUrl = '',
   double defaultSavingsRatio = 0.5,
 }) => {
   'id': id,

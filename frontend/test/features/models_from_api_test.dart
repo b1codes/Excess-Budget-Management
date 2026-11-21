@@ -67,6 +67,13 @@ void main() {
       expect(p.defaultSavingsRatio, 0.5);
     });
 
+    // Regression: the profile screen showed NetworkImage("") for users with
+    // no avatar, which throws (found by the E2E suite).
+    test('an empty avatar_url means no avatar', () {
+      expect(UserProfile.fromJson(userJson(avatarUrl: '')).avatarUrl, isNull);
+      expect(UserProfile.fromJson(userJson(avatarUrl: null)).avatarUrl, isNull);
+    });
+
     test('round-trips through toJson', () {
       final p = UserProfile.fromJson(userJson());
       expect(UserProfile.fromJson(p.toJson()), p);

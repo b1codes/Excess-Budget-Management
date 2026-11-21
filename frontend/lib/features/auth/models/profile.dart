@@ -21,7 +21,12 @@ class UserProfile extends Equatable {
       id: json['id'] as String,
       email: json['email'] as String?,
       fullName: json['full_name'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
+      // The API sends "" when there's no avatar (a blank URLField). Treat it
+      // as none: NetworkImage("") fetches the page itself and throws.
+      avatarUrl: switch (json['avatar_url'] as String?) {
+        '' => null,
+        final url => url,
+      },
       defaultSavingsRatio: parseAmount(json['default_savings_ratio']),
     );
   }
