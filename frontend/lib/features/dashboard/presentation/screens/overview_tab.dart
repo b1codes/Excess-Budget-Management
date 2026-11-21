@@ -12,6 +12,7 @@ import '../../models/allocation.dart';
 import '../widgets/allocation_card.dart';
 import '../widgets/metric_card.dart';
 import '../widgets/sub_goal_distribution_sheet.dart';
+import '../../../budget/models/budget_category.dart';
 import '../../../goals/models/goal.dart';
 
 class OverviewTab extends StatefulWidget {
@@ -167,7 +168,14 @@ class _OverviewTabState extends State<OverviewTab> {
             // The tab shell keeps every visited tab mounted, so each tab's FAB
             // needs its own hero tag or route transitions find duplicates.
             heroTag: 'overview_fab',
-            onPressed: () => context.go('/bulk-entry'),
+            onPressed: () async {
+              await context.push('/bulk-entry');
+              // The overview stays mounted underneath, so pick up whatever
+              // was just entered.
+              if (context.mounted) {
+                context.read<DashboardBloc>().add(DashboardRefreshRequested());
+              }
+            },
             icon: const Icon(Icons.library_add),
             label: const Text('Bulk Entry'),
           ),
@@ -478,14 +486,12 @@ class _OverviewTabState extends State<OverviewTab> {
   Widget _buildMetrics(BuildContext context, DashboardDataLoaded state) {
     final netWorth = state.accounts.fold(0.0, (sum, a) => sum + a.balance);
 
-    final totalSpent = state.budgetCategories.fold(
-      0.0,
-      (sum, b) => sum + b.spentAmount,
+    // Income categories track money coming in, so they aren't budget.
+    final budgets = state.budgetCategories.where(
+      (b) => b.type == BudgetCategoryType.expense,
     );
-    final totalLimit = state.budgetCategories.fold(
-      0.0,
-      (sum, b) => sum + b.limitAmount,
-    );
+    final totalSpent = budgets.fold(0.0, (sum, b) => sum + b.spentAmount);
+    final totalLimit = budgets.fold(0.0, (sum, b) => sum + b.limitAmount);
     final budgetProgress = totalLimit > 0
         ? (totalSpent / totalLimit).clamp(0.0, 1.0)
         : 0.0;

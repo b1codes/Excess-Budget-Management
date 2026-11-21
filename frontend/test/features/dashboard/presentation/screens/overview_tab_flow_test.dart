@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/theme/llc_theme.dart';
+import 'package:frontend/features/budget/models/budget_category.dart';
 import 'package:frontend/features/dashboard/bloc/dashboard_bloc.dart';
 import 'package:frontend/features/dashboard/bloc/dashboard_event.dart';
 import 'package:frontend/features/dashboard/bloc/dashboard_state.dart';
@@ -140,6 +141,33 @@ void main() {
     // (1250 + 1250) of (5000 + 5000)
     expect(find.text('25%'), findsOneWidget);
     expect(find.text(r'$2,500 of $10,000'), findsOneWidget);
+  });
+
+  // Regression: income categories were summed in, so an income target
+  // counted as budget and income received as money spent (found by the E2E
+  // suite).
+  testWidgets('leaves income categories out of the monthly budget', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      DashboardDataLoaded(
+        accounts: const [],
+        budgetCategories: [
+          category(limit: 400, spent: 100),
+          category(
+            id: 'c2',
+            name: 'Side gigs',
+            limit: 500,
+            spent: 250,
+            type: BudgetCategoryType.income,
+          ),
+        ],
+        goals: const [],
+        recentAllocations: const [],
+      ),
+    );
+    expect(find.text(r'$100 / $400'), findsOneWidget);
   });
 
   testWidgets('shows zero progress without budgets or goals', (tester) async {
@@ -314,6 +342,25 @@ void main() {
       await tester.tap(find.text('Bulk Entry'));
       await tester.pumpAndSettle();
       expect(find.text('bulk page'), findsOneWidget);
+    });
+
+    // Regression: the overview stays mounted under bulk entry, so what was
+    // just entered didn't show when the user came back (found by the E2E
+    // suite).
+    testWidgets('coming back from Bulk Entry refreshes the metrics', (
+      tester,
+    ) async {
+      await pump(tester, loaded());
+      await tester.tap(find.text('Bulk Entry'));
+      await tester.pumpAndSettle();
+      verifyNever(() => dashboard.add(any()));
+
+      final nav = tester.state<NavigatorState>(find.byType(Navigator).first);
+      nav.pop();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(OverviewTab), findsOneWidget);
+      expect(dispatched().single, isA<DashboardRefreshRequested>());
     });
 
     testWidgets('the history button opens allocation history', (tester) async {

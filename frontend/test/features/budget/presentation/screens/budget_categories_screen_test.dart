@@ -115,4 +115,39 @@ void main() {
 
     addTearDown(tester.view.resetPhysicalSize);
   });
+
+  // Regression: the header summed income categories too, counting an income
+  // target as budget and income received as spending.
+  testWidgets('the header totals expense categories only', (tester) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    when(() => mockBudgetBloc.state).thenReturn(
+      BudgetLoaded([
+        BudgetCategory(
+          id: '1',
+          userId: 'u1',
+          name: 'Food',
+          limitAmount: 400,
+          spentAmount: 100,
+          createdAt: DateTime(2026),
+        ),
+        BudgetCategory(
+          id: '2',
+          userId: 'u1',
+          name: 'Side gigs',
+          limitAmount: 500,
+          spentAmount: 250,
+          createdAt: DateTime(2026),
+          type: BudgetCategoryType.income,
+        ),
+      ]),
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    expect(find.text(r'$100'), findsOneWidget);
+    expect(find.text(r' / $400'), findsOneWidget);
+  });
 }

@@ -63,10 +63,12 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
           } else if (state is BudgetError) {
             return Center(child: Text('Error: ${state.message}'));
           } else if (state is BudgetLoaded) {
-            // Calculate totals
+            // Totals cover spending only: income categories track money
+            // coming in against a target, so they aren't budget.
             double totalBudget = 0;
             double totalSpent = 0;
-            for (var cat in state.categories) {
+            for (final cat in state.categories) {
+              if (cat.type != BudgetCategoryType.expense) continue;
               totalBudget += cat.limitAmount;
               totalSpent += cat.spentAmount;
             }
