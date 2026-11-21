@@ -50,6 +50,10 @@ class _BulkExpenseTabState extends State<BulkExpenseTab> {
                   itemBuilder: (context, index) {
                     final row = state.rows[index];
                     return Card(
+                      // Key by row id: the fields use initialValue, so
+                      // without it, removing a row would leave the rows
+                      // below showing the removed row's text.
+                      key: ValueKey(row.id),
                       margin: const EdgeInsets.only(bottom: 16),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -70,6 +74,7 @@ class _BulkExpenseTabState extends State<BulkExpenseTab> {
                                     Icons.delete_outline,
                                     color: Colors.red,
                                   ),
+                                  tooltip: 'Remove row',
                                   onPressed: () => context
                                       .read<BulkExpensesBloc>()
                                       .add(RemoveExpenseRow(row.id)),
