@@ -26,21 +26,28 @@ class Allocation {
   }
 }
 
+/// The response of POST /suggestions/generate (SuggestOut).
 class SuggestionResult {
   final List<Allocation> allocations;
   final double totalAllocated;
 
-  SuggestionResult({required this.allocations, required this.totalAllocated});
+  /// The model's explanation of the split as a whole.
+  final String reasoning;
+
+  SuggestionResult({
+    required this.allocations,
+    required this.totalAllocated,
+    this.reasoning = '',
+  });
 
   factory SuggestionResult.fromJson(Map<String, dynamic> json) {
-    var allocList = json['allocations'] as List? ?? [];
-    List<Allocation> allocations = allocList
-        .map((i) => Allocation.fromJson(i))
-        .toList();
-
+    final allocList = json['allocations'] as List? ?? const [];
     return SuggestionResult(
-      allocations: allocations,
-      totalAllocated: (json['totalAllocated'] as num).toDouble(),
+      allocations: allocList
+          .map((i) => Allocation.fromJson(i as Map<String, dynamic>))
+          .toList(),
+      totalAllocated: parseAmount(json['totalAllocated']),
+      reasoning: json['reasoning'] as String? ?? '',
     );
   }
 }

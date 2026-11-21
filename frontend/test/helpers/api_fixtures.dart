@@ -177,3 +177,27 @@ Map<String, dynamic> overtimeProjectionJson({
   'months_to_complete_with_overtime': monthsWithOvertime,
   'months_saved': monthsSaved,
 };
+
+Map<String, dynamic> suggestionJson({
+  String type = 'goal',
+  String id = 'goal-1',
+  String name = 'Emergency fund',
+  String amount = '300.00',
+  String reason = 'Closest to its target date',
+}) => {
+  'type': type,
+  'id': id,
+  'name': name,
+  'amount': amount,
+  'reason': reason,
+};
+
+Map<String, dynamic> suggestResultJson({
+  List<Map<String, dynamic>>? allocations,
+  String totalAllocated = '300.00',
+  String reasoning = 'Short-term goals first.',
+}) => {
+  'allocations': allocations ?? [suggestionJson()],
+  'totalAllocated': totalAllocated,
+  'reasoning': reasoning,
+};

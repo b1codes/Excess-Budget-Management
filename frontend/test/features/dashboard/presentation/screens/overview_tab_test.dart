@@ -104,4 +104,32 @@ void main() {
 
     addTearDown(tester.view.resetPhysicalSize);
   });
+
+  Future<void> pumpWithReasoning(WidgetTester tester, String reasoning) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    when(() => mockDashboardBloc.state).thenReturn(
+      DashboardSuggestionsLoaded(
+        SuggestionResult(
+          allocations: const [],
+          totalAllocated: 0,
+          reasoning: reasoning,
+        ),
+        const [],
+      ),
+    );
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+  }
+
+  testWidgets('shows the reasoning above the proposals', (tester) async {
+    await pumpWithReasoning(tester, 'Short-term goals first.');
+    expect(find.text('Short-term goals first.'), findsOneWidget);
+  });
+
+  testWidgets('shows no reasoning line when there is none', (tester) async {
+    await pumpWithReasoning(tester, '');
+    expect(find.byKey(const Key('suggestion-reasoning')), findsNothing);
+  });
 }

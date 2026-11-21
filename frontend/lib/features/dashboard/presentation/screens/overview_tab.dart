@@ -382,6 +382,18 @@ class _OverviewTabState extends State<OverviewTab> {
             ),
           ],
         ),
+        if (state.result.reasoning.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            state.result.reasoning,
+            key: const Key('suggestion-reasoning'),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         LayoutBuilder(
           builder: (context, constraints) {
