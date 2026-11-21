@@ -9,8 +9,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc({required this.authService}) : super(AuthInitial()) {
     on<AuthCheckRequested>((event, emit) async {
-      final user = await authService.currentUser();
-      emit(user != null ? AuthAuthenticated(user) : AuthUnauthenticated());
+      try {
+        final user = await authService.currentUser();
+        emit(user != null ? AuthAuthenticated(user) : AuthUnauthenticated());
+      } on ApiException {
+        // e.g. offline at launch: show the login screen rather than leaving
+        // the app stuck in AuthInitial.
+        emit(AuthUnauthenticated());
+      }
     });
     on<AuthLoginRequested>((event, emit) async {
       emit(AuthLoading());

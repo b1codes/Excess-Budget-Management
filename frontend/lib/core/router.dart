@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -22,113 +24,138 @@ import '../features/income/presentation/screens/overtime_screen.dart';
 import '../features/income/repositories/income_repository.dart';
 import 'api/api_client.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
+/// Where to send the user for [uri] given the current [authState], or `null`
+/// to stay put. Signed-out users only see /login and /signup; signed-in users
+/// are bounced off those two pages to the dashboard.
+String? authRedirect(AuthState authState, Uri uri) {
+  final isAuthenticated = authState is AuthAuthenticated;
+  final isLoggingIn = uri.path == '/login' || uri.path == '/signup';
 
-final goRouter = GoRouter(
-  initialLocation: '/',
-  navigatorKey: _rootNavigatorKey,
-  redirect: (context, state) {
-    final authState = context.read<AuthBloc>().state;
-    final isAuthenticated = authState is AuthAuthenticated;
-    final isLoggingIn =
-        state.uri.toString() == '/login' || state.uri.toString() == '/signup';
+  if (!isAuthenticated && !isLoggingIn) {
+    return '/login';
+  }
 
-    if (!isAuthenticated && !isLoggingIn) {
-      return '/login';
-    }
+  if (isAuthenticated && isLoggingIn) {
+    return '/';
+  }
 
-    if (isAuthenticated && isLoggingIn) {
-      return '/';
-    }
+  return null;
+}
 
-    return null;
-  },
-  routes: [
-    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-    GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
-    StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) {
-        return DashboardScreen(navigationShell: navigationShell);
-      },
-      branches: [
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/',
-              builder: (context, state) => const OverviewTab(),
-              routes: [
-                GoRoute(
-                  path: 'history',
-                  builder: (context, state) => BlocProvider(
-                    create: (context) => AllocationHistoryBloc(
-                      goalRepository: GoalRepository(
-                        client: context.read<ApiClient>(),
-                      ),
-                    )..add(FetchAllocationHistory()),
-                    child: const AllocationHistoryScreen(),
+/// Builds the app router. It re-runs [authRedirect] on every [authBloc] state
+/// change, so signing in, signing out and session expiry all navigate
+/// without each screen having to listen for them.
+GoRouter createRouter(AuthBloc authBloc, {String initialLocation = '/'}) {
+  return GoRouter(
+    initialLocation: initialLocation,
+    navigatorKey: GlobalKey<NavigatorState>(),
+    refreshListenable: StreamListenable(authBloc.stream),
+    redirect: (context, state) => authRedirect(authBloc.state, state.uri),
+    routes: [
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/signup',
+        builder: (context, state) => const SignupScreen(),
+      ),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return DashboardScreen(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => const OverviewTab(),
+                routes: [
+                  GoRoute(
+                    path: 'history',
+                    builder: (context, state) => BlocProvider(
+                      create: (context) => AllocationHistoryBloc(
+                        goalRepository: GoalRepository(
+                          client: context.read<ApiClient>(),
+                        ),
+                      )..add(FetchAllocationHistory()),
+                      child: const AllocationHistoryScreen(),
+                    ),
                   ),
-                ),
-                GoRoute(
-                  path: 'bulk-entry',
-                  builder: (context, state) => const BulkEntryScreen(),
-                ),
-              ],
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/transactions',
-              builder: (context, state) => const TransactionsScreen(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/accounts',
-              builder: (context, state) => const AccountsScreen(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/budget',
-              builder: (context, state) => const BudgetCategoriesScreen(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/goals',
-              builder: (context, state) => const GoalListScreen(),
-              routes: [
-                GoRoute(
-                  path: 'overtime',
-                  builder: (context, state) => BlocProvider(
-                    create: (context) => OvertimeBloc(
-                      incomeRepository: IncomeRepository(
-                        client: context.read<ApiClient>(),
-                      ),
-                      goalRepository: GoalRepository(
-                        client: context.read<ApiClient>(),
-                      ),
-                    )..add(FetchOvertimeData()),
-                    child: const OvertimeScreen(),
+                  GoRoute(
+                    path: 'bulk-entry',
+                    builder: (context, state) => const BulkEntryScreen(),
                   ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ],
-    ),
-    GoRoute(
-      path: '/profile',
-      builder: (context, state) => const ProfileScreen(),
-    ),
-  ],
-);
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/transactions',
+                builder: (context, state) => const TransactionsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/accounts',
+                builder: (context, state) => const AccountsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/budget',
+                builder: (context, state) => const BudgetCategoriesScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/goals',
+                builder: (context, state) => const GoalListScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'overtime',
+                    builder: (context, state) => BlocProvider(
+                      create: (context) => OvertimeBloc(
+                        incomeRepository: IncomeRepository(
+                          client: context.read<ApiClient>(),
+                        ),
+                        goalRepository: GoalRepository(
+                          client: context.read<ApiClient>(),
+                        ),
+                      )..add(FetchOvertimeData()),
+                      child: const OvertimeScreen(),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
+    ],
+  );
+}
+
+/// Adapts a [Stream] to a [Listenable] for [GoRouter.refreshListenable].
+class StreamListenable extends ChangeNotifier {
+  StreamListenable(Stream<dynamic> stream) {
+    _subscription = stream.listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}

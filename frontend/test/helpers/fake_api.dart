@@ -33,6 +33,11 @@ class ScriptedAdapter implements HttpClientAdapter {
   final _queue = <Object>[];
   final requests = <RecordedRequest>[];
 
+  /// Answers requests once the queue is empty, for tests (such as whole-app
+  /// tests) that can't predict the order of requests. Returns
+  /// `(status, body)`.
+  (int, Object?) Function(RequestOptions options)? fallback;
+
   void enqueue(int status, [Object? body]) {
     _queue.add((status, body));
   }
@@ -52,12 +57,16 @@ class ScriptedAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     requests.add(RecordedRequest(options));
-    if (_queue.isEmpty) {
+    final Object next;
+    if (_queue.isNotEmpty) {
+      next = _queue.removeAt(0);
+    } else if (fallback != null) {
+      next = fallback!(options);
+    } else {
       throw StateError(
         'No queued response for ${options.method} ${options.path}',
       );
     }
-    final next = _queue.removeAt(0);
     if (next is DioExceptionType) {
       throw DioException(requestOptions: options, type: next, message: 'boom');
     }
