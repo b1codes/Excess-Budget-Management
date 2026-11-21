@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "corsheaders",
     # Local apps registered as work progresses:
     "apps.common",
     "apps.users",
@@ -36,6 +37,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # Must run before CommonMiddleware so preflight OPTIONS requests are
+    # answered with CORS headers instead of a 405.
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -130,7 +134,10 @@ AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN", "")
 AUTH0_AUDIENCE = os.environ.get("AUTH0_AUDIENCE", "")
 
 
-# CORS — handled by django-cors-headers when added in Task 4
+# CORS (django-cors-headers). The web build is served from its own origin
+# (S3 + CloudFront, or `flutter run -d chrome` locally), so every API call is
+# cross-origin. Comma-separated, e.g. https://app.example.com. The default
+# allowed headers already include Authorization and Content-Type.
 CORS_ALLOWED_ORIGINS = [
     o.strip() for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
 ]
