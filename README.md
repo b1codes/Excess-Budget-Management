@@ -140,6 +140,18 @@ to `main`, and on demand. Each area has its own job, and each one has a matching
 
 When a change raises coverage, raise the gate in the same PR.
 
+**Frontend test helpers** live in `frontend/test/helpers/`:
+
+- `api_fixtures.dart`: JSON shaped like the real API responses. Money is a
+  string such as `"100.00"` and `user_id` is never sent. Build payloads from these
+  rather than writing them by hand, so tests catch parsing bugs.
+- `fake_api.dart`: `FakeApi`, a real `ApiClient` over a fake HTTP adapter. Queue
+  responses with `enqueue`, or answer by path with `route`, then assert on the
+  recorded `requests`.
+- `mocks.dart`: mocktail repository mocks and model builders for bloc tests.
+- `widget_harness.dart`: `pumpHarness` (the app theme plus providers) and
+  `MockBloc`s for the app-wide blocs.
+
 **Flutter version.** `frontend/.fvmrc` pins the Flutter SDK, and CI reads it. With
 [fvm](https://fvm.app) installed, the `make` targets use it automatically; otherwise
 they fall back to whatever `flutter` is on your `PATH`.

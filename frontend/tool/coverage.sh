@@ -7,9 +7,9 @@
 # FLUTTER=... / DART=... (e.g. FLUTTER="fvm flutter").
 set -euo pipefail
 
-# Ratchet: start just below the measured baseline and raise as coverage
-# improves (frontend test suite subtask CU-86bd3g3d5).
-MIN_COVERAGE="${MIN_COVERAGE:-29}"
+# Ratchet: kept just below the measured baseline and only ever raised. The
+# frontend test suite (CU-86bd3g3d5) took it from 29.6% to 98.4%.
+MIN_COVERAGE="${MIN_COVERAGE:-97}"
 
 read -r -a flutter <<<"${FLUTTER:-flutter}"
 read -r -a dart <<<"${DART:-dart}"
