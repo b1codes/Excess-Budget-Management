@@ -46,17 +46,10 @@ class _QueueAdapter implements HttpClientAdapter {
 // Canned account JSON fixture
 Map<String, dynamic> _accountJson({
   String id = 'acc-1',
-  String userId = 'user-1',
   String name = 'Checking',
   String balance = '1500.00',
   String createdAt = '2024-01-01T00:00:00Z',
-}) => {
-  'id': id,
-  'user_id': userId,
-  'name': name,
-  'balance': double.parse(balance),
-  'created_at': createdAt,
-};
+}) => {'id': id, 'name': name, 'balance': balance, 'created_at': createdAt};
 
 void main() {
   late _QueueAdapter adapter;
@@ -98,7 +91,7 @@ void main() {
       expect(accounts[0].id, 'acc-1');
       expect(accounts[0].name, 'Checking');
       expect(accounts[0].balance, 1500.00);
-      expect(accounts[0].userId, 'user-1');
+      expect(accounts[0].userId, ''); // the API never sends user_id
       expect(accounts[1].id, 'acc-2');
       expect(accounts[1].name, 'Savings');
       expect(accounts[1].balance, 3200.50);
@@ -216,9 +209,8 @@ void main() {
         adapter.enqueue(200, [
           {
             'id': 'exp-1',
-            'user_id': 'user-1',
             'budget_category_id': 'cat-1',
-            'amount': 45.50,
+            'amount': '45.50',
             'description': 'Groceries',
             'date': '2024-03-15',
             'created_at': '2024-03-15T10:00:00Z',
@@ -243,8 +235,7 @@ void main() {
         adapter.enqueue(200, [
           {
             'id': 'inc-1',
-            'user_id': 'user-1',
-            'amount': 200.00,
+            'amount': '200.00',
             'description': 'Freelance payment',
             'date_received': '2024-03-20',
             'created_at': '2024-03-20T09:00:00Z',

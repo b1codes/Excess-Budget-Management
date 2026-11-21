@@ -1,243 +1,277 @@
-// Uses the same queue-based HttpClientAdapter pattern as account_repository_test.dart.
-
-import 'dart:convert';
-import 'dart:typed_data';
-
-import 'package:dio/dio.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:frontend/core/api/api_client.dart';
-import 'package:frontend/core/api/auth_token_store.dart';
-import 'package:frontend/features/budget/repositories/budget_repository.dart';
+import 'package:frontend/core/api/api_exceptions.dart';
 import 'package:frontend/features/budget/models/budget_category.dart';
+import 'package:frontend/features/budget/repositories/budget_repository.dart';
 
-class _MockTokenStore extends Mock implements AuthTokenStore {}
-
-class _QueueAdapter implements HttpClientAdapter {
-  final _queue = <ResponseBody>[];
-
-  void enqueue(int status, Object? body) {
-    _queue.add(
-      ResponseBody.fromString(
-        body != null ? jsonEncode(body) : '',
-        status,
-        headers: {
-          Headers.contentTypeHeader: [Headers.jsonContentType],
-        },
-      ),
-    );
-  }
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future? cancelFuture,
-  ) async {
-    assert(_queue.isNotEmpty, 'No more queued responses');
-    return _queue.removeAt(0);
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
-
-Map<String, dynamic> _categoryJson({
-  String id = 'cat-1',
-  String userId = 'user-1',
-  String name = 'Groceries',
-  String limitAmount = '300.00',
-  String spentAmount = '0.00',
-  String categoryType = 'expense',
-  String createdAt = '2024-01-01T00:00:00Z',
-}) => {
-  'id': id,
-  'user_id': userId,
-  'name': name,
-  'limit_amount': double.parse(limitAmount),
-  'spent_amount': double.parse(spentAmount),
-  'category_type': categoryType,
-  'icon_code': null,
-  'color_hex': null,
-  'created_at': createdAt,
-};
-
-Map<String, dynamic> _expenseJson({
-  String id = 'exp-1',
-  String userId = 'user-1',
-  String budgetCategoryId = 'cat-1',
-  double amount = 45.0,
-  String date = '2024-03-15',
-  String createdAt = '2024-03-15T10:00:00Z',
-}) => {
-  'id': id,
-  'user_id': userId,
-  'budget_category_id': budgetCategoryId,
-  'amount': amount,
-  'description': null,
-  'date': date,
-  'created_at': createdAt,
-  'account_id': null,
-};
+import '../../../helpers/api_fixtures.dart';
+import '../../../helpers/fake_api.dart';
 
 void main() {
-  late _QueueAdapter adapter;
-  late _MockTokenStore tokenStore;
-  late ApiClient apiClient;
-  late BudgetRepository repository;
+  late FakeApi api;
+  late BudgetRepository repo;
 
   setUp(() {
-    adapter = _QueueAdapter();
-    tokenStore = _MockTokenStore();
-
-    when(() => tokenStore.write(any(), any())).thenAnswer((_) async {});
-    when(() => tokenStore.readAccess()).thenAnswer((_) async => null);
-    when(() => tokenStore.readRefresh()).thenAnswer((_) async => null);
-    when(() => tokenStore.clear()).thenAnswer((_) async {});
-
-    final dio = Dio(BaseOptions(baseUrl: 'http://test'));
-    dio.httpClientAdapter = adapter;
-
-    apiClient = ApiClient(
-      dio: dio,
-      tokenStore: tokenStore,
-      onUnauthenticated: () async {},
-    );
-
-    repository = BudgetRepository(client: apiClient);
+    api = FakeApi();
+    repo = BudgetRepository(client: api.client);
   });
 
-  group('BudgetRepository.getBudgetCategories', () {
-    test(
-      'issues GET /budget/categories and maps to List<BudgetCategory>',
-      () async {
-        adapter.enqueue(200, [
-          _categoryJson(id: 'cat-1', name: 'Groceries', limitAmount: '300.00'),
-          _categoryJson(
-            id: 'cat-2',
-            name: 'Transport',
-            limitAmount: '100.00',
-            categoryType: 'expense',
-          ),
-        ]);
+  group('getBudgetCategories', () {
+    test('GETs /budget/categories and parses each category', () async {
+      api.enqueue(200, [
+        budgetCategoryJson(id: 'cat-1', limitAmount: '300.00'),
+        budgetCategoryJson(id: 'cat-2', categoryType: 'income'),
+      ]);
 
-        final categories = await repository.getBudgetCategories();
+      final categories = await repo.getBudgetCategories();
 
-        expect(categories.length, 2);
-        expect(categories[0].id, 'cat-1');
-        expect(categories[0].name, 'Groceries');
-        expect(categories[0].limitAmount, 300.0);
-        expect(categories[0].type, BudgetCategoryType.expense);
-        expect(categories[1].id, 'cat-2');
-      },
-    );
+      expect(api.last.method, 'GET');
+      expect(api.last.path, '/budget/categories');
+      expect(categories.map((c) => c.id), ['cat-1', 'cat-2']);
+      expect(categories[0].limitAmount, 300.0);
+      expect(categories[1].type, BudgetCategoryType.income);
+    });
 
-    test('returns empty list when server responds with empty array', () async {
-      adapter.enqueue(200, <dynamic>[]);
+    test('returns an empty list for an empty array', () async {
+      api.enqueue(200, <dynamic>[]);
+      expect(await repo.getBudgetCategories(), isEmpty);
+    });
 
-      final categories = await repository.getBudgetCategories();
-
-      expect(categories, isEmpty);
+    test('maps a 500 to ApiServerException', () async {
+      api.enqueue(500, {'detail': 'boom'});
+      await expectLater(
+        repo.getBudgetCategories(),
+        throwsA(isA<ApiServerException>()),
+      );
     });
   });
 
-  group('BudgetRepository.addBudgetCategory', () {
-    test(
-      'issues POST /budget/categories and returns parsed BudgetCategory',
-      () async {
-        adapter.enqueue(
-          201,
-          _categoryJson(
-            id: 'cat-new',
-            name: 'Entertainment',
-            limitAmount: '150.00',
-            categoryType: 'expense',
-          ),
+  group('getBudgetCategoriesStream', () {
+    test('emits immediately, then polls every 30 seconds', () {
+      fakeAsync((async) {
+        api.enqueue(200, [budgetCategoryJson(id: 'a')]);
+        api.enqueue(200, [budgetCategoryJson(id: 'b')]);
+        final seen = <List<String>>[];
+        final sub = repo.getBudgetCategoriesStream().listen(
+          (cats) => seen.add(cats.map((c) => c.id).toList()),
         );
 
-        final category = await repository.addBudgetCategory(
-          'Entertainment',
-          150.0,
-          type: BudgetCategoryType.expense,
-        );
-
-        expect(category.id, 'cat-new');
-        expect(category.name, 'Entertainment');
-        expect(category.limitAmount, 150.0);
-        expect(category.type, BudgetCategoryType.expense);
-      },
-    );
-
-    test(
-      'sends limit_amount as fixed-point string with 2 decimal places',
-      () async {
-        RequestOptions? captured;
-
-        final capturingAdapter = _CapturingAdapter(
-          delegate: adapter,
-          onFetch: (opts) => captured = opts,
-        );
-        final captureDio = Dio(BaseOptions(baseUrl: 'http://test'));
-        captureDio.httpClientAdapter = capturingAdapter;
-        final captureClient = ApiClient(
-          dio: captureDio,
-          tokenStore: tokenStore,
-          onUnauthenticated: () async {},
-        );
-        final captureRepo = BudgetRepository(client: captureClient);
-
-        adapter.enqueue(
-          201,
-          _categoryJson(name: 'Bills', limitAmount: '299.99'),
-        );
-
-        await captureRepo.addBudgetCategory('Bills', 299.99);
-
-        expect(captured, isNotNull);
-        final body = captured!.data as Map<String, dynamic>;
-        expect(body['name'], 'Bills');
-        expect(body['limit_amount'], '299.99');
-        expect(body['category_type'], 'expense');
-      },
-    );
-  });
-
-  group('BudgetRepository.getCategoryExpenses', () {
-    test(
-      'issues GET /expenses?budget_category_id=<id> and maps to List<Expense>',
-      () async {
-        adapter.enqueue(200, [
-          _expenseJson(id: 'exp-1', budgetCategoryId: 'cat-1', amount: 45.0),
-          _expenseJson(id: 'exp-2', budgetCategoryId: 'cat-1', amount: 20.0),
+        async.elapse(const Duration(milliseconds: 1));
+        expect(seen, [
+          ['a'],
         ]);
 
-        final expenses = await repository.getCategoryExpenses('cat-1');
+        async.elapse(const Duration(seconds: 30));
+        expect(seen, [
+          ['a'],
+          ['b'],
+        ]);
+        sub.cancel();
+      });
+    });
+  });
 
-        expect(expenses.length, 2);
-        expect(expenses[0].id, 'exp-1');
-        expect(expenses[0].amount, 45.0);
-        expect(expenses[0].budgetCategoryId, 'cat-1');
-        expect(expenses[1].amount, 20.0);
+  group('getExpenses', () {
+    test('GETs /expenses without filters', () async {
+      api.enqueue(200, [expenseJson(), expenseJson(id: 'exp-2')]);
+
+      final expenses = await repo.getExpenses();
+
+      expect(api.last.path, '/expenses');
+      expect(api.last.query, isEmpty);
+      expect(expenses, hasLength(2));
+      expect(expenses.first.amount, 42.5);
+    });
+  });
+
+  test('deleteExpense DELETEs /expenses/:id', () async {
+    api.enqueue(204);
+    await repo.deleteExpense('exp-9');
+    expect(api.last.method, 'DELETE');
+    expect(api.last.path, '/expenses/exp-9');
+  });
+
+  group('addBudgetCategory', () {
+    test('POSTs a two-decimal limit and the default expense type', () async {
+      api.enqueue(
+        201,
+        budgetCategoryJson(name: 'Bills', limitAmount: '299.99'),
+      );
+
+      final c = await repo.addBudgetCategory('Bills', 299.99);
+
+      expect(api.last.method, 'POST');
+      expect(api.last.path, '/budget/categories');
+      expect(api.last.jsonBody, {
+        'name': 'Bills',
+        'limit_amount': '299.99',
+        'category_type': 'expense',
+      });
+      expect(c.name, 'Bills');
+      expect(c.limitAmount, 299.99);
+    });
+
+    test('includes icon, colour and an income type when given', () async {
+      api.enqueue(201, budgetCategoryJson(categoryType: 'income'));
+
+      await repo.addBudgetCategory(
+        'Salary',
+        0,
+        iconCode: 0xe000,
+        colorHex: '#00FF00',
+        type: BudgetCategoryType.income,
+      );
+
+      expect(api.last.jsonBody, {
+        'name': 'Salary',
+        'limit_amount': '0.00',
+        'category_type': 'income',
+        'icon_code': 0xe000,
+        'color_hex': '#00FF00',
+      });
+    });
+
+    test(
+      'maps a 422 to ApiValidationException with the server message',
+      () async {
+        api.enqueue(422, {
+          'error': {
+            'message': 'Name too long',
+            'details': {'name': 'max 200'},
+          },
+        });
+
+        await expectLater(
+          repo.addBudgetCategory('x' * 300, 1),
+          throwsA(
+            isA<ApiValidationException>()
+                .having((e) => e.message, 'message', 'Name too long')
+                .having((e) => e.details, 'details', {'name': 'max 200'}),
+          ),
+        );
       },
     );
   });
-}
 
-class _CapturingAdapter implements HttpClientAdapter {
-  _CapturingAdapter({required this.delegate, required this.onFetch});
-  final _QueueAdapter delegate;
-  final void Function(RequestOptions) onFetch;
+  group('updateBudgetCategory', () {
+    test('PATCHes name and limit only when nothing else is given', () async {
+      api.enqueue(200, budgetCategoryJson());
 
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future? cancelFuture,
-  ) {
-    onFetch(options);
-    return delegate.fetch(options, requestStream, cancelFuture);
-  }
+      await repo.updateBudgetCategory('cat-1', 'Food', 50);
 
-  @override
-  void close({bool force = false}) => delegate.close(force: force);
+      expect(api.last.method, 'PATCH');
+      expect(api.last.path, '/budget/categories/cat-1');
+      expect(api.last.jsonBody, {'name': 'Food', 'limit_amount': '50.00'});
+    });
+
+    test('includes icon, colour and type when given', () async {
+      api.enqueue(200, budgetCategoryJson());
+
+      final c = await repo.updateBudgetCategory(
+        'cat-1',
+        'Food',
+        50.5,
+        iconCode: 1,
+        colorHex: '#123456',
+        type: BudgetCategoryType.income,
+      );
+
+      expect(api.last.jsonBody, {
+        'name': 'Food',
+        'limit_amount': '50.50',
+        'icon_code': 1,
+        'color_hex': '#123456',
+        'category_type': 'income',
+      });
+      expect(c.id, 'cat-1');
+    });
+
+    test('maps a 404 to ApiNotFoundException', () async {
+      api.enqueue(404, {'detail': 'Not found'});
+      await expectLater(
+        repo.updateBudgetCategory('missing', 'x', 1),
+        throwsA(isA<ApiNotFoundException>()),
+      );
+    });
+  });
+
+  test('deleteBudgetCategory DELETEs /budget/categories/:id', () async {
+    api.enqueue(204);
+    await repo.deleteBudgetCategory('cat-3');
+    expect(api.last.method, 'DELETE');
+    expect(api.last.path, '/budget/categories/cat-3');
+  });
+
+  group('bulkInsertExpenses', () {
+    test('POSTs each expense in order without user_id', () async {
+      api.enqueue(201, expenseJson(id: 'a'));
+      api.enqueue(201, expenseJson(id: 'b'));
+
+      await repo.bulkInsertExpenses([
+        {'user_id': 'u', 'amount': '1.00', 'budget_category_id': 'cat-1'},
+        {'amount': '2.00', 'budget_category_id': 'cat-2'},
+      ]);
+
+      expect(api.requests.map((r) => '${r.method} ${r.path}'), [
+        'POST /expenses',
+        'POST /expenses',
+      ]);
+      expect(api.requests[0].jsonBody, {
+        'amount': '1.00',
+        'budget_category_id': 'cat-1',
+      });
+      expect(api.requests[1].jsonBody['amount'], '2.00');
+    });
+
+    test('does not mutate the caller\'s maps', () async {
+      api.enqueue(201, expenseJson());
+      final entry = {'user_id': 'u', 'amount': '1.00'};
+      await repo.bulkInsertExpenses([entry]);
+      expect(entry, containsPair('user_id', 'u'));
+    });
+
+    test('stops at the first failure', () async {
+      api.enqueue(201, expenseJson());
+      api.enqueue(422, {'detail': 'bad amount'});
+
+      await expectLater(
+        repo.bulkInsertExpenses([
+          {'amount': '1.00'},
+          {'amount': 'x'},
+          {'amount': '3.00'},
+        ]),
+        throwsA(isA<ApiValidationException>()),
+      );
+      expect(api.requests, hasLength(2));
+    });
+
+    test('sends nothing for an empty list', () async {
+      await repo.bulkInsertExpenses([]);
+      expect(api.requests, isEmpty);
+    });
+  });
+
+  test('getCategoryExpenses filters by budget_category_id', () async {
+    api.enqueue(200, [expenseJson(amount: '45.00'), expenseJson(id: 'e2')]);
+
+    final expenses = await repo.getCategoryExpenses('cat-1');
+
+    expect(api.last.path, '/expenses');
+    expect(api.last.query, {'budget_category_id': 'cat-1'});
+    expect(expenses.first.amount, 45.0);
+    expect(expenses, hasLength(2));
+  });
+
+  test(
+    'getCategoryIncome filters extra income by budget_category_id',
+    () async {
+      api.enqueue(200, [extraIncomeJson(budgetCategoryId: 'cat-7')]);
+
+      final income = await repo.getCategoryIncome('cat-7');
+
+      expect(api.last.path, '/income/extra');
+      expect(api.last.query, {'budget_category_id': 'cat-7'});
+      expect(income.single.categoryId, 'cat-7');
+    },
+  );
 }
