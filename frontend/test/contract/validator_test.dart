@@ -88,7 +88,7 @@ void main() {
       ]);
     });
 
-    test('requests must send money as a string', () {
+    test('requests must send Decimal fields as strings', () {
       final body = {
         'budget_category_id': '3fa85f64-5717-4562-b3fc-2c963f66afa6',
         'amount': 0.1 + 0.2,
@@ -101,7 +101,7 @@ void main() {
           direction: Direction.request,
         ),
         [
-          r'$.amount: send money as a two-decimal string (e.g. "0.30"), '
+          r'$.amount: send Decimal fields as a string (e.g. "0.30"), '
               'not the number 0.30000000000000004',
         ],
       );

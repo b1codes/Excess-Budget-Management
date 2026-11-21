@@ -13,9 +13,10 @@
 //   response fixture it's a field the client reads that the API never sends
 //   (goal_accounts and user_id slipped through this way), and in a request
 //   it's a field pydantic silently drops.
-// * In requests, money is sent as a string ("12.50"), never a JSON number. The
-//   API rejects amounts with more than two decimal places, and a double such
-//   as 0.1 + 0.2 serialises as 0.30000000000000004.
+// * In requests, Decimal fields (money, rates, hours) are sent as strings
+//   ("12.50"), never JSON numbers. The API rejects values with more decimal
+//   places than the field allows, and a double such as 0.1 + 0.2 serialises
+//   as 0.30000000000000004.
 
 import 'dart:convert';
 import 'dart:io';
@@ -116,7 +117,7 @@ class OpenApiContract {
           value is num &&
           _isDecimal(branches)) {
         errors.add(
-          '$at: send money as a two-decimal string (e.g. '
+          '$at: send Decimal fields as a string (e.g. '
           '"${value.toStringAsFixed(2)}"), not the number $value',
         );
         return;
