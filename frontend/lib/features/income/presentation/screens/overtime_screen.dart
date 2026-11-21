@@ -60,16 +60,32 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return BlocListener<OvertimeBloc, OvertimeState>(
-      listenWhen: (prev, curr) =>
-          !prev.isLoading && curr.settings != null && !_initialized,
-      listener: (context, state) {
-        if (state.settings != null) {
-          _initFields(state.settings!);
-          _standardContribController.text = state.standardContribution
-              .toStringAsFixed(2);
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<OvertimeBloc, OvertimeState>(
+          listenWhen: (prev, curr) =>
+              !prev.isLoading && curr.settings != null && !_initialized,
+          listener: (context, state) {
+            if (state.settings != null) {
+              _initFields(state.settings!);
+              _standardContribController.text = state.standardContribution
+                  .toStringAsFixed(2);
+            }
+          },
+        ),
+        // Confirm only once the save has actually succeeded. A failed save
+        // shows its error in the banner instead.
+        BlocListener<OvertimeBloc, OvertimeState>(
+          listenWhen: (prev, curr) => prev.isSaving && !curr.isSaving,
+          listener: (context, state) {
+            if (state.errorMessage == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Settings saved successfully.')),
+              );
+            }
+          },
+        ),
+      ],
       child: BlocBuilder<OvertimeBloc, OvertimeState>(
         builder: (context, state) {
           if (state.isLoading) {
@@ -185,16 +201,9 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
                   TextButton.icon(
                     onPressed: state.settings == null
                         ? null
-                        : () {
-                            context.read<OvertimeBloc>().add(
-                              SaveOvertimeSettings(),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Settings saved successfully.'),
-                              ),
-                            );
-                          },
+                        : () => context.read<OvertimeBloc>().add(
+                            SaveOvertimeSettings(),
+                          ),
                     icon: const Icon(Icons.save),
                     label: const Text('Save Settings'),
                   ),
@@ -292,6 +301,7 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
+              isExpanded: true,
               initialValue: state.selectedGoalId,
               decoration: const InputDecoration(
                 labelText: 'Select Financial Goal',
@@ -312,6 +322,7 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
             if (subgoals.isNotEmpty) ...[
               const SizedBox(height: 16),
               DropdownButtonFormField<String?>(
+                isExpanded: true,
                 initialValue: state.selectedSubgoalId,
                 decoration: const InputDecoration(
                   labelText: 'Select Subgoal (Optional)',
@@ -361,8 +372,11 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Wrap rather than Row: the two labels don't fit side by side on
+            // narrow cards or with large text.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 12,
               children: [
                 Text(
                   '${state.overtimeHoursPerWeek.toStringAsFixed(1)} hrs / week',
@@ -667,12 +681,15 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          Flexible(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             value,
             style: theme.textTheme.bodyLarge?.copyWith(
@@ -697,7 +714,8 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: theme.textTheme.bodySmall),
+            Flexible(child: Text(label, style: theme.textTheme.bodySmall)),
+            const SizedBox(width: 8),
             Text(
               '${months.toStringAsFixed(1)} ${months == 1.0 ? 'month' : 'months'}',
               style: theme.textTheme.bodySmall?.copyWith(
