@@ -38,17 +38,16 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   void _loginWithAuth0() {
+    // Read the bloc now: the sheet closes itself before calling onLogin, so
+    // its own context is no longer usable for lookups by then.
+    final authBloc = context.read<AuthBloc>();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return Auth0MockSheet(
-          onLogin: (token) {
-            context.read<AuthBloc>().add(AuthAuth0LoginRequested(token));
-          },
-        );
-      },
+      builder: (_) => Auth0MockSheet(
+        onLogin: (token) => authBloc.add(AuthAuth0LoginRequested(token)),
+      ),
     );
   }
 

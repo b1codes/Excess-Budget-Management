@@ -275,12 +275,15 @@ class _Auth0MockSheetState extends State<Auth0MockSheet> {
                 ),
                 const SizedBox(height: 16),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                // Wrap, not Row: the two links don't fit side by side on
+                // narrow screens or with large text.
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
                   children: [
                     TextButton(
                       onPressed: () => setState(() => _isEmailFlow = false),
                       child: const Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.arrow_back, size: 16),
                           SizedBox(width: 4),
@@ -288,7 +291,6 @@ class _Auth0MockSheetState extends State<Auth0MockSheet> {
                         ],
                       ),
                     ),
-                    const Spacer(),
                     TextButton(
                       onPressed: () => setState(() => _isSignUp = !_isSignUp),
                       child: Text(
