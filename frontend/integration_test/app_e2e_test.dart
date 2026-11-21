@@ -10,6 +10,7 @@
 
 import 'journeys/accounts_journey.dart';
 import 'journeys/auth_journey.dart';
+import 'journeys/budget_journey.dart';
 import 'journeys/dashboard_journey.dart';
 import 'support/e2e.dart';
 
@@ -19,6 +20,7 @@ const _journeys = {
   'Auth': authJourneys,
   'Accounts': accountsJourneys,
   'Dashboard': dashboardJourneys,
+  'Budget': budgetJourneys,
 };
 
 void main() {

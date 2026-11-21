@@ -39,10 +39,11 @@ Future<void> signOutThroughUi(WidgetTester tester) async {
 
 /// Opens a top-level tab: Overview, Transactions, Accounts, Budget or Goals.
 Future<void> openTab(WidgetTester tester, String label) async {
-  final rail = find.byType(NavigationRail);
-  final bar = find.byType(NavigationBar);
-  final scope = rail.evaluate().isNotEmpty ? rail : bar;
-  await tester.tapOn(find.descendant(of: scope, matching: find.text(label)));
+  // A rail on wide layouts, a bottom bar on compact ones.
+  final nav = find.byWidgetPredicate(
+    (w) => w is NavigationRail || w is NavigationBar,
+  );
+  await tester.tapOn(find.descendant(of: nav, matching: find.text(label)));
 }
 
 /// Narrows [finder] to the open dialog.

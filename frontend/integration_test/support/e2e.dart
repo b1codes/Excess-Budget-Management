@@ -163,18 +163,45 @@ extension E2eTester on WidgetTester {
   }
 
   /// Replaces the text of the [TextField] or [TextFormField] labelled
-  /// [label]. [within] narrows the search, e.g. to an open dialog.
-  Future<void> fillField(String label, String text, {Finder? within}) async {
+  /// [label]. [index] picks among several fields with the same label (e.g.
+  /// one per bulk-entry row); [within] narrows the search, e.g. to a dialog.
+  Future<void> fillField(
+    String label,
+    String text, {
+    int index = 0,
+    Finder? within,
+  }) async {
     final field = find.ancestor(
       of: within == null
           ? find.text(label)
           : find.descendant(of: within, matching: find.text(label)),
       matching: find.byType(TextField),
     );
-    await waitFor(field);
-    await ensureVisible(field.first);
-    await enterText(field.first, text);
+    await waitFor(field.at(index));
+    await ensureVisible(field.at(index));
+    await enterText(field.at(index), text);
     await pump(const Duration(milliseconds: 100));
+  }
+
+  /// Opens the dropdown labelled [label] and picks [option]. [index] picks
+  /// among several dropdowns with the same label.
+  Future<void> choose(String label, String option, {int index = 0}) async {
+    final dropdown = find.ancestor(
+      of: find.text(label),
+      matching: find.byWidgetPredicate((w) => w is DropdownButtonFormField),
+    );
+    await waitFor(dropdown.at(index));
+    await ensureVisible(dropdown.at(index));
+    await tap(dropdown.at(index));
+    await pump(const Duration(milliseconds: 500));
+    // The open menu draws its own copy of each item, on top of the button.
+    await waitFor(
+      find.text(option),
+      reason: 'option "$option" in "$label"',
+      timeout: const Duration(seconds: 5),
+    );
+    await tap(find.text(option).last);
+    await pump(const Duration(milliseconds: 500));
   }
 }
 
