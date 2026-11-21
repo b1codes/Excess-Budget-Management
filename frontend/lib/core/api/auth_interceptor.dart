@@ -27,12 +27,32 @@ class AuthInterceptor extends QueuedInterceptor {
   final FutureOr<void> Function() onUnauthenticated;
   Future<void>? _inflightRefresh;
 
+  /// The endpoints that work without a session. Every other request,
+  /// including /auth/me, carries the access token and is refreshed on a 401.
+  static const publicPaths = {
+    '/auth/signup',
+    '/auth/login',
+    '/auth/auth0',
+    '/auth/refresh',
+    '/auth/password-reset/request',
+    '/auth/password-reset/confirm',
+  };
+
+  static bool _isPublic(RequestOptions options) {
+    final path = options.uri.path;
+    return publicPaths.any(path.endsWith);
+  }
+
   @override
   Future<void> onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    if (options.path.contains('/auth/')) return handler.next(options);
+    // Regression: this used to skip every path containing /auth/, so
+    // /auth/me never had a token. The startup session check always failed,
+    // signing the user out on every launch, and the profile screen couldn't
+    // load or save.
+    if (_isPublic(options)) return handler.next(options);
     final token = await tokenStore.readAccess();
     if (token != null) options.headers['Authorization'] = 'Bearer $token';
     handler.next(options);
@@ -43,8 +63,9 @@ class AuthInterceptor extends QueuedInterceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    final isAuth = err.requestOptions.path.contains('/auth/');
-    if (err.response?.statusCode != 401 || isAuth) return handler.next(err);
+    if (err.response?.statusCode != 401 || _isPublic(err.requestOptions)) {
+      return handler.next(err);
+    }
     try {
       await (_inflightRefresh ??= _refresh());
     } catch (_) {

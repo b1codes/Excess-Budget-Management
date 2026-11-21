@@ -449,6 +449,10 @@ class Operation {
         as Map<String, dynamic>?;
   }
 
+  /// Whether the operation takes a bearer token (it lists a security scheme).
+  bool get requiresAuth =>
+      (spec['security'] as List<dynamic>?)?.isNotEmpty ?? false;
+
   Set<String> get queryParams => {
     for (final p in (spec['parameters'] as List<dynamic>? ?? const []))
       if ((p as Map<String, dynamic>)['in'] == 'query') p['name'] as String,
@@ -458,9 +462,10 @@ class Operation {
 /// A stand-in for the API that answers [FakeApi] requests the way the real one
 /// would, and records every way a request breaks the contract.
 ///
-/// Each request must route to a documented operation, use only documented
-/// query parameters, and send a body that matches the operation's request
-/// schema (or no body if it takes none). The answer is the operation's success
+/// Each request must route to a documented operation, carry a bearer token if
+/// the operation is secured, use only documented query parameters, and send a
+/// body that matches the operation's request schema (or no body if it takes
+/// none). The answer is the operation's success
 /// status with a body generated from its response schema, unless [respond]
 /// registered one, in which case that body is checked against the schema too.
 class ContractServer {
@@ -494,6 +499,12 @@ class ContractServer {
       return (404, {'detail': 'Not Found'});
     }
     hits.add(op.id);
+
+    // Regression: the client skipped the token for every /auth/ path, so
+    // GET and PATCH /auth/me always got a 401 (found by the E2E suite).
+    if (op.requiresAuth && options.headers['Authorization'] == null) {
+      violations.add('$label: needs a bearer token but was sent without one');
+    }
 
     final allowed = op.queryParams;
     for (final key in options.queryParameters.keys) {
