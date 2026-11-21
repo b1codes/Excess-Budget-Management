@@ -12,6 +12,7 @@ import 'journeys/accounts_journey.dart';
 import 'journeys/auth_journey.dart';
 import 'journeys/budget_journey.dart';
 import 'journeys/dashboard_journey.dart';
+import 'journeys/income_journey.dart';
 import 'support/e2e.dart';
 
 const _only = String.fromEnvironment('E2E_ONLY');
@@ -21,6 +22,7 @@ const _journeys = {
   'Accounts': accountsJourneys,
   'Dashboard': dashboardJourneys,
   'Budget': budgetJourneys,
+  'Income': incomeJourneys,
 };
 
 void main() {
