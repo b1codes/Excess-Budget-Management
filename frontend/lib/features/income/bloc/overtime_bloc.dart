@@ -12,6 +12,7 @@ part 'overtime_state.dart';
 class OvertimeBloc extends Bloc<OvertimeEvent, OvertimeState> {
   final IncomeRepository incomeRepository;
   final GoalRepository goalRepository;
+  int _projectionRequest = 0;
 
   OvertimeBloc({required this.incomeRepository, required this.goalRepository})
     : super(OvertimeState()) {
@@ -132,6 +133,12 @@ class OvertimeBloc extends Bloc<OvertimeEvent, OvertimeState> {
   ) async {
     if (state.settings == null) return;
 
+    // Every field change requests a new projection, and the requests run
+    // concurrently. Only the newest one may update the state, so a slow,
+    // stale response (e.g. from earlier in a slider drag) can't overwrite it.
+    final request = ++_projectionRequest;
+    bool isStale() => request != _projectionRequest;
+
     emit(state.copyWith(isCalculating: true));
     try {
       final projection = await incomeRepository.getOvertimeProjection(
@@ -140,10 +147,12 @@ class OvertimeBloc extends Bloc<OvertimeEvent, OvertimeState> {
         goalId: state.selectedGoalId,
         subgoalId: state.selectedSubgoalId,
       );
+      if (isStale()) return;
       emit(
         state.copyWith(isCalculating: false, projection: Wrapped(projection)),
       );
     } catch (e) {
+      if (isStale()) return;
       emit(
         state.copyWith(
           isCalculating: false,
