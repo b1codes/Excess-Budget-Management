@@ -49,14 +49,31 @@ class ApiClient {
     }
   }
 
+  /// A readable message for django-ninja's request-validation body,
+  /// `{"detail": [{"loc": ["body", "payload", "email"], "msg": "..."}]}`:
+  /// the first problem, prefixed with the field it's about.
+  static String _validationMessage(List<dynamic> detail) {
+    final first = detail.isEmpty ? null : detail.first;
+    if (first is! Map || first['msg'] == null) return 'Invalid request';
+    final loc = first['loc'];
+    final field = loc is List && loc.isNotEmpty ? loc.last : null;
+    final where = field is String && field != 'payload' && field != 'body'
+        ? '$field: '
+        : '';
+    return '$where${first['msg']}';
+  }
+
   ApiException _toApi(DioException e) {
     final resp = e.response;
     if (resp == null) return ApiNetworkException(e.message ?? 'Network error');
     final body = resp.data is Map ? resp.data as Map : null;
     final err = body?['error'] is Map ? body!['error'] as Map : null;
-    final msg = (err?['message'] ?? body?['detail'] ?? 'Request failed')
-        .toString();
-    final det = err?['details'] ?? body?['detail'];
+    final detail = body?['detail'];
+    final msg =
+        err?['message']?.toString() ??
+        (detail is List ? _validationMessage(detail) : detail?.toString()) ??
+        'Request failed';
+    final det = err?['details'] ?? detail;
     switch (resp.statusCode) {
       case 401:
         return ApiAuthException(msg, det);

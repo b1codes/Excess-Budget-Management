@@ -26,7 +26,7 @@ def test_generate_requires_auth():
 def test_generate_returns_suggestion_and_persists_audit(auth_client):
     client, user = auth_client
     Profile.objects.update_or_create(user=user, defaults={"default_savings_ratio": Decimal("0.5")})
-    create_goal(
+    goal = create_goal(
         user,
         GoalIn(
             name="Vacation",
@@ -37,7 +37,7 @@ def test_generate_returns_suggestion_and_persists_audit(auth_client):
     )
 
     fake_response = {
-        "suggestions": [{"goalName": "Vacation", "amount": 100}],
+        "allocations": [{"type": "goal", "id": str(goal.id), "amount": 100, "reason": "Soon"}],
         "reasoning": "Vacation funds short-term gratification.",
     }
     with patch("apps.suggestions.services.call_gemini", return_value=fake_response):
@@ -48,6 +48,7 @@ def test_generate_returns_suggestion_and_persists_audit(auth_client):
         )
     assert r.status_code == 200
     assert r.json()["reasoning"].startswith("Vacation funds")
+    assert r.json()["allocations"][0]["name"] == "Vacation"
     from apps.common.firestore import get_client
     from apps.suggestions.services import COLLECTION
 

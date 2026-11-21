@@ -47,15 +47,6 @@ class Goal extends Equatable {
   ];
 
   factory Goal.fromJson(Map<String, dynamic> json) {
-    // goal_accounts is Supabase-only join syntax; Django API uses a flat list
-    // under the same key populated via GoalOut (not present yet) or omitted.
-    List<String> parsedAccountIds = [];
-    if (json['goal_accounts'] != null) {
-      parsedAccountIds = (json['goal_accounts'] as List)
-          .map((e) => e['account_id'] as String)
-          .toList();
-    }
-
     return Goal(
       id: json['id'] as String,
       // user_id is not included in the Django GoalOut schema (inferred from auth).
@@ -69,14 +60,18 @@ class Goal extends Equatable {
       type: json['type'] as String,
       category: json['category'] as String? ?? 'savings',
       createdAt: DateTime.parse(json['created_at'] as String),
-      // sub_goals nested join is Supabase-only; Django API does not embed subgoals
-      // in GoalOut — call GET /goals/{id}/subgoals explicitly if needed.
+      // GoalOut always embeds sub_goals and account_ids; the null fallbacks
+      // only keep older payloads (and partial test fixtures) parseable.
       subGoals:
           (json['sub_goals'] as List<dynamic>?)
               ?.map((e) => SubGoal.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      accountIds: parsedAccountIds,
+      accountIds:
+          (json['account_ids'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
     );
   }
 
@@ -90,7 +85,7 @@ class Goal extends Equatable {
       'type': type,
       'category': category,
       'sub_goals': subGoals.map((e) => e.toJson()).toList(),
-      // accountIds are handled separately in junction table
+      // accountIds are written via POST/DELETE /goals/{id}/accounts.
     };
   }
 }

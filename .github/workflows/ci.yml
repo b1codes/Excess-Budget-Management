@@ -40,6 +40,17 @@ jobs:
       - name: ruff format
         run: uv run ruff format --check --diff .
 
+      # The API contract the Flutter client is tested against. pytest checks
+      # this too; this step fails fast, without the emulator.
+      - name: OpenAPI snapshot is current
+        env:
+          DJANGO_SECRET_KEY: ci-openapi-check
+        run: |
+          if ! uv run python manage.py export_openapi --check; then
+            echo "::error file=backend/openapi.json::backend/openapi.json is stale. Run 'make openapi' and commit the result."
+            exit 1
+          fi
+
   backend-test:
     name: Backend · tests + coverage
     runs-on: ubuntu-latest

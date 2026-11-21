@@ -25,6 +25,15 @@ class GoalPatch(Schema):
     category: GoalCategory | None = None
 
 
+class SubgoalOut(Schema):
+    id: uuid.UUID
+    goal_id: uuid.UUID
+    name: str
+    target_amount: condecimal(max_digits=12, decimal_places=2)
+    current_amount: condecimal(max_digits=12, decimal_places=2)
+    created_at: datetime
+
+
 class GoalOut(Schema):
     id: uuid.UUID
     name: str
@@ -34,6 +43,10 @@ class GoalOut(Schema):
     type: GoalType
     category: GoalCategory
     created_at: datetime
+    # Always present (possibly empty), so the client never has to make a
+    # second request to show a goal's subgoals or linked accounts.
+    sub_goals: list[SubgoalOut]
+    account_ids: list[uuid.UUID]
 
 
 class SubgoalIn(Schema):
@@ -46,15 +59,6 @@ class SubgoalPatch(Schema):
     name: str | None = None
     target_amount: condecimal(max_digits=12, decimal_places=2) | None = None
     current_amount: condecimal(max_digits=12, decimal_places=2) | None = None
-
-
-class SubgoalOut(Schema):
-    id: uuid.UUID
-    goal_id: uuid.UUID
-    name: str
-    target_amount: condecimal(max_digits=12, decimal_places=2)
-    current_amount: condecimal(max_digits=12, decimal_places=2)
-    created_at: datetime
 
 
 class GoalAccountIn(Schema):

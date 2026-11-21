@@ -10,6 +10,7 @@ import 'package:frontend/core/api/api_client.dart';
 import 'package:frontend/core/api/api_exceptions.dart';
 import 'package:frontend/core/api/auth_token_store.dart';
 import 'package:frontend/features/dashboard/repositories/suggestion_repository.dart';
+import '../../../helpers/api_fixtures.dart';
 
 class _MockTokenStore extends Mock implements AuthTokenStore {}
 
@@ -43,29 +44,24 @@ class _QueueAdapter implements HttpClientAdapter {
 }
 
 Map<String, dynamic> _suggestionResultJson({
-  List<Map<String, dynamic>>? allocations,
-  double totalAllocated = 500.0,
-}) => {
-  'allocations':
-      allocations ??
-      [
-        {
-          'type': 'goal',
-          'id': 'goal-1',
-          'name': 'Emergency Fund',
-          'amount': 300.0,
-          'reason': 'Build safety net',
-        },
-        {
-          'type': 'goal',
-          'id': 'goal-2',
-          'name': 'Vacation',
-          'amount': 200.0,
-          'reason': 'Save for trip',
-        },
-      ],
-  'totalAllocated': totalAllocated,
-};
+  String totalAllocated = '500.00',
+}) => suggestResultJson(
+  allocations: [
+    suggestionJson(
+      id: 'goal-1',
+      name: 'Emergency Fund',
+      amount: '300.00',
+      reason: 'Build safety net',
+    ),
+    suggestionJson(
+      id: 'goal-2',
+      name: 'Vacation',
+      amount: '200.00',
+      reason: 'Save for trip',
+    ),
+  ],
+  totalAllocated: totalAllocated,
+);
 
 void main() {
   late _QueueAdapter adapter;
@@ -98,7 +94,7 @@ void main() {
     test(
       'happy path: issues POST /suggestions/generate and returns SuggestionResult',
       () async {
-        adapter.enqueue(200, _suggestionResultJson(totalAllocated: 500.0));
+        adapter.enqueue(200, _suggestionResultJson(totalAllocated: '500.00'));
 
         final result = await repository.getSuggestions(excessFunds: 500.0);
 

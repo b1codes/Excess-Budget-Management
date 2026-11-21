@@ -274,25 +274,4 @@ void main() {
     await repo.deleteGoal('goal-5');
     expect(calls(), ['DELETE /goals/goal-5']);
   });
-
-  group('getSubgoals', () {
-    test(
-      'GETs the subgoals, then returns the parent goal from /goals',
-      () async {
-        api.enqueue(200, [subGoalJson()]);
-        api.enqueue(200, [goalJson(id: 'goal-0'), goalJson(id: 'goal-1')]);
-
-        final result = await repo.getSubgoals('goal-1');
-
-        expect(calls(), ['GET /goals/goal-1/subgoals', 'GET /goals']);
-        expect(result.single.id, 'goal-1');
-      },
-    );
-
-    test('throws StateError when the parent goal is gone', () async {
-      api.enqueue(200, <dynamic>[]);
-      api.enqueue(200, <dynamic>[]);
-      await expectLater(repo.getSubgoals('goal-1'), throwsStateError);
-    });
-  });
 }

@@ -100,9 +100,9 @@ void main() {
       expect(api.last.method, 'PATCH');
       expect(api.last.path, '/income/overtime/settings');
       expect(api.last.jsonBody, {
-        'hourly_base_rate': 35.0,
-        'overtime_multiplier': 2.0,
-        'estimated_tax_rate': 0.3,
+        'hourly_base_rate': '35.00',
+        'overtime_multiplier': '2.00',
+        'estimated_tax_rate': '0.30',
       });
       expect(saved.hourlyBaseRate, 35.0);
     });
@@ -139,8 +139,8 @@ void main() {
       expect(api.last.method, 'POST');
       expect(api.last.path, '/income/overtime/projections');
       expect(api.last.jsonBody, {
-        'overtime_hours_per_week': 5.0,
-        'standard_contribution': 0.0,
+        'overtime_hours_per_week': '5.00',
+        'standard_contribution': '0.00',
       });
       expect(p.netHourlyRate, 33.75);
       expect(p.monthsSaved, isNull);
@@ -157,8 +157,8 @@ void main() {
       );
 
       expect(api.last.jsonBody, {
-        'overtime_hours_per_week': 10.0,
-        'standard_contribution': 200.0,
+        'overtime_hours_per_week': '10.00',
+        'standard_contribution': '200.00',
         'goal_id': 'goal-1',
         'subgoal_id': 'sub-1',
       });

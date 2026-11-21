@@ -1,4 +1,4 @@
-from ninja import NinjaAPI
+from ninja import NinjaAPI, Schema
 
 api = NinjaAPI(
     title="Excess Budget API",
@@ -55,6 +55,10 @@ from apps.dashboard.api import router as dashboard_router  # noqa: E402
 api.add_router("/dashboard", dashboard_router)
 
 
-@api.get("/health", tags=["meta"], summary="Health check", auth=None)
+class HealthOut(Schema):
+    status: str
+
+
+@api.get("/health", response=HealthOut, tags=["meta"], summary="Health check", auth=None)
 def health(request):
     return {"status": "ok"}

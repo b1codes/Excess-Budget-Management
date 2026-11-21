@@ -246,22 +246,26 @@ void main() {
   });
 
   group('SuggestionResult', () {
-    test('parses allocations and the total', () {
-      final r = SuggestionResult.fromJson({
-        'allocations': [
-          {
-            'type': 'goal',
-            'id': 'g1',
-            'name': 'Trip',
-            'amount': '50.00',
-            'reason': 'Closest to done',
-          },
-        ],
-        'totalAllocated': 50,
-      });
+    test('parses allocations, the total and the reasoning', () {
+      final r = SuggestionResult.fromJson(
+        suggestResultJson(
+          allocations: [
+            suggestionJson(
+              id: 'g1',
+              name: 'Trip',
+              amount: '50.00',
+              reason: 'Closest to done',
+            ),
+          ],
+          totalAllocated: '50.00',
+          reasoning: 'Trip first.',
+        ),
+      );
+      expect(r.allocations.single.id, 'g1');
       expect(r.allocations.single.amount, 50.0);
       expect(r.allocations.single.reason, 'Closest to done');
       expect(r.totalAllocated, 50.0);
+      expect(r.reasoning, 'Trip first.');
     });
 
     test('treats a missing allocations list as empty', () {
@@ -298,9 +302,9 @@ void main() {
     test('toJson and copyWith', () {
       final s = OvertimeSettings.fromJson(overtimeSettingsJson());
       expect(s.toJson(), {
-        'hourly_base_rate': 30.0,
-        'overtime_multiplier': 1.5,
-        'estimated_tax_rate': 0.25,
+        'hourly_base_rate': '30.00',
+        'overtime_multiplier': '1.50',
+        'estimated_tax_rate': '0.25',
       });
       final t = s.copyWith(hourlyBaseRate: 40);
       expect(t.hourlyBaseRate, 40);

@@ -101,8 +101,8 @@ Map<String, dynamic> goalJson({
   String type = 'short_term',
   String category = 'savings',
   String createdAt = kCreatedAt,
-  List<Map<String, dynamic>>? subGoals,
-  List<String>? accountIds,
+  List<Map<String, dynamic>> subGoals = const [],
+  List<String> accountIds = const [],
 }) => {
   'id': id,
   'name': name,
@@ -112,13 +112,8 @@ Map<String, dynamic> goalJson({
   'type': type,
   'category': category,
   'created_at': createdAt,
-  // Not part of GoalOut today. Only included when a test opts in, to exercise
-  // the client's handling of nested data.
-  'sub_goals': ?subGoals,
-  if (accountIds != null)
-    'goal_accounts': [
-      for (final a in accountIds) {'account_id': a},
-    ],
+  'sub_goals': subGoals,
+  'account_ids': accountIds,
 };
 
 Map<String, dynamic> subGoalJson({
@@ -181,4 +176,28 @@ Map<String, dynamic> overtimeProjectionJson({
   'months_to_complete_standard': monthsStandard,
   'months_to_complete_with_overtime': monthsWithOvertime,
   'months_saved': monthsSaved,
+};
+
+Map<String, dynamic> suggestionJson({
+  String type = 'goal',
+  String id = 'goal-1',
+  String name = 'Emergency fund',
+  String amount = '300.00',
+  String reason = 'Closest to its target date',
+}) => {
+  'type': type,
+  'id': id,
+  'name': name,
+  'amount': amount,
+  'reason': reason,
+};
+
+Map<String, dynamic> suggestResultJson({
+  List<Map<String, dynamic>>? allocations,
+  String totalAllocated = '300.00',
+  String reasoning = 'Short-term goals first.',
+}) => {
+  'allocations': allocations ?? [suggestionJson()],
+  'totalAllocated': totalAllocated,
+  'reasoning': reasoning,
 };
