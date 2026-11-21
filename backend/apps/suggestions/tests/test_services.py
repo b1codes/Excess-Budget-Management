@@ -16,7 +16,22 @@ from apps.users.models import Profile
 
 pytestmark = pytest.mark.django_db
 
-GOOD = {"suggestions": [{"goalName": "Trip", "amount": 60.0}], "reasoning": "Because."}
+GOOD = {
+    "allocations": [{"type": "goal", "id": "<goal>", "amount": 60.0, "reason": "Soonest"}],
+    "reasoning": "Because.",
+}
+
+
+def _reply(*allocations, reasoning="Because."):
+    return {"allocations": list(allocations), "reasoning": reasoning}
+
+
+def _goal(id, amount, reason="r"):
+    return {"type": "goal", "id": id, "amount": amount, "reason": reason}
+
+
+def _account(id, amount, reason="r"):
+    return {"type": "account", "id": id, "amount": amount, "reason": reason}
 
 
 def _audit_docs(user):
@@ -112,36 +127,129 @@ def test_prompt_mentions_excess_ratio_and_goals(user, make):
 # --- Endpoint -----------------------------------------------------------------------
 
 
-def test_generate_persists_an_audit_record(api, user):
-    with patch.object(services, "call_gemini", return_value=GOOD) as gemini:
-        r = api.post("/suggestions/generate", {"excess_funds": "100.50"})
+def _generate(api, reply, excess="100.00"):
+    with patch.object(services, "call_gemini", return_value=reply) as gemini:
+        r = api.post("/suggestions/generate", {"excess_funds": excess})
+    return r, gemini
+
+
+def test_generate_returns_the_apps_shape_and_persists_an_audit_record(api, user, make):
+    goal = make.goal(name="Trip")
+    account = make.account(name="Savings")
+    reply = _reply(_goal(goal["id"], 60.0, "Soonest"), _account(account["id"], 15.5, "Buffer"))
+
+    r, gemini = _generate(api, reply, excess="100.50")
 
     assert r.status_code == 200
     assert r.json() == {
-        "suggestions": [{"goalName": "Trip", "amount": 60.0, "subgoalName": None}],
+        "allocations": [
+            {
+                "type": "goal",
+                "id": goal["id"],
+                "name": "Trip",
+                "amount": "60.00",
+                "reason": "Soonest",
+            },
+            {
+                "type": "account",
+                "id": account["id"],
+                "name": "Savings",
+                "amount": "15.50",
+                "reason": "Buffer",
+            },
+        ],
+        "totalAllocated": "75.50",
         "reasoning": "Because.",
     }
-    assert "$100.50" in gemini.call_args.args[0]
+    prompt = gemini.call_args.args[0]
+    assert "$100.50" in prompt
+    assert goal["id"] in prompt and account["id"] in prompt
     [doc] = _audit_docs(user)
     assert doc.get("excess_funds") == 10050
-    assert doc.get("response_json") == GOOD
+    assert doc.get("response_json") == reply
+
+
+def test_names_come_from_the_users_records(api, make):
+    goal = make.goal(name="Real name")
+    reply = _reply({**_goal(goal["id"], 10), "name": "Model's name"})
+    assert _generate(api, reply)[0].json()["allocations"][0]["name"] == "Real name"
+
+
+def test_ids_the_user_does_not_own_are_dropped(api, other_api, make):
+    mine = make.goal(name="Mine")
+    theirs = make.as_(other_api).goal(name="Theirs")
+    their_account = make.as_(other_api).account()
+    reply = _reply(
+        _goal(mine["id"], 10),
+        _goal(theirs["id"], 20),
+        _account(their_account["id"], 30),
+        _goal("not-a-real-id", 5),
+        # Right id, wrong type: a goal id is not an account.
+        _account(mine["id"], 5),
+    )
+
+    body = _generate(api, reply)[0].json()
+
+    assert [a["id"] for a in body["allocations"]] == [mine["id"]]
+    assert body["totalAllocated"] == "10.00"
+
+
+def test_amounts_are_rounded_to_cents_and_sub_cent_ones_dropped(api, make):
+    goal = make.goal()
+    other = make.goal(name="Other")
+    reply = _reply(_goal(goal["id"], 33.333333333333336), _goal(other["id"], 0.001))
+
+    body = _generate(api, reply)[0].json()
+
+    assert [(a["id"], a["amount"]) for a in body["allocations"]] == [(goal["id"], "33.33")]
+    assert body["totalAllocated"] == "33.33"
+
+
+def test_empty_suggestion_list_is_fine(api):
+    r, _ = _generate(api, _reply())
+    assert r.status_code == 200
+    assert r.json() == {"allocations": [], "totalAllocated": "0.00", "reasoning": "Because."}
+
+
+def test_allocating_more_than_the_excess_is_a_502_and_not_persisted(api, user, make):
+    goal = make.goal()
+    r, _ = _generate(api, _reply(_goal(goal["id"], 60), _goal(goal["id"], 41)), excess="100.00")
+
+    assert r.status_code == 502
+    assert r.json()["error"]["details"] == {"excess_funds": "100.00", "suggested": "101.00"}
+    assert _audit_docs(user) == []
 
 
 @pytest.mark.parametrize(
     "bad",
     [
-        {"reasoning": "no suggestions key"},
-        {"suggestions": "not a list", "reasoning": "x"},
-        {"suggestions": [{"amount": 1}], "reasoning": "missing goalName"},
+        {"reasoning": "no allocations key"},
+        {"allocations": "not a list", "reasoning": "x"},
+        {"allocations": [{"type": "goal", "amount": 1}], "reasoning": "missing id"},
+        {"allocations": [{"type": "fund", "id": "x", "amount": 1}], "reasoning": "bad type"},
+        {"allocations": [{"type": "goal", "id": "x", "amount": -5}], "reasoning": "negative"},
+        {"allocations": [{"type": "goal", "id": "x", "amount": 0}], "reasoning": "zero"},
+        {"allocations": [], "reasoning": None},
+        # The old reply shape, from before the API matched the app.
+        {"suggestions": [{"goalName": "Trip", "amount": 1}], "reasoning": "x"},
         ["not", "an", "object"],
     ],
-    ids=["missing_suggestions", "wrong_type", "bad_item", "array"],
+    ids=[
+        "missing_allocations",
+        "wrong_type",
+        "missing_id",
+        "unknown_target_type",
+        "negative_amount",
+        "zero_amount",
+        "missing_reasoning",
+        "old_shape",
+        "array",
+    ],
 )
 def test_malformed_model_output_is_a_502_and_not_persisted(api, user, bad):
-    # Regression: output that didn't match SuggestOut was saved, then failed
+    # Regression: output that didn't match the schema was saved, then failed
     # response validation and surfaced as a 500.
-    with patch.object(services, "call_gemini", return_value=bad):
-        r = api.post("/suggestions/generate", {"excess_funds": "100.00"})
+    r, _ = _generate(api, bad)
 
     assert r.status_code == 502
     assert r.json()["error"]["code"] == "upstream_error"
