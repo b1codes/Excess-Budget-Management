@@ -21,7 +21,12 @@ void main() {
 
   group('BudgetBloc', () {
     late MockBudgetRepository repo;
-    setUp(() => repo = MockBudgetRepository());
+    setUp(() {
+      repo = MockBudgetRepository();
+      when(
+        () => repo.getBudgetCategories(),
+      ).thenAnswer((_) async => [category(name: 'Fresh')]);
+    });
     BudgetBloc build() => BudgetBloc(repository: repo);
 
     blocTest<BudgetBloc, BudgetState>(
@@ -45,7 +50,10 @@ void main() {
           type: BudgetCategoryType.income,
         ),
       ),
-      expect: () => <BudgetState>[],
+      // Regression: writes used to wait for the next 30s poll to show up.
+      expect: () => [
+        BudgetLoaded([category(name: 'Fresh')]),
+      ],
       verify: (_) => verify(
         () => repo.addBudgetCategory(
           'Salary',
@@ -83,6 +91,9 @@ void main() {
           when(() => repo.deleteBudgetCategory(any())).thenAnswer((_) async {}),
       build: build,
       act: (b) => b.add(const DeleteBudgetCategory('cat-1')),
+      expect: () => [
+        BudgetLoaded([category(name: 'Fresh')]),
+      ],
       verify: (_) => verify(() => repo.deleteBudgetCategory('cat-1')).called(1),
     );
 
@@ -157,8 +168,40 @@ void main() {
 
   group('AccountBloc', () {
     late MockAccountRepository repo;
-    setUp(() => repo = MockAccountRepository());
+    setUp(() {
+      repo = MockAccountRepository();
+      when(
+        () => repo.getAccounts(),
+      ).thenAnswer((_) async => [account(name: 'Fresh')]);
+    });
     AccountBloc build() => AccountBloc(repository: repo);
+
+    // Regression: writes used to wait for the next 30s poll to show up.
+    blocTest<AccountBloc, AccountState>(
+      'each successful write refetches the list right away',
+      setUp: () {
+        when(
+          () => repo.addAccount(any(), any()),
+        ).thenAnswer((_) async => account());
+        when(
+          () => repo.updateAccount(any(), any(), any()),
+        ).thenAnswer((_) async => account());
+        when(() => repo.deleteAccount(any())).thenAnswer((_) async {});
+      },
+      build: build,
+      act: (b) async {
+        b.add(const AddAccount('New', 10));
+        await Future<void>.delayed(Duration.zero);
+        b.add(const UpdateAccount('acc-1', 'Renamed', 20));
+        await Future<void>.delayed(Duration.zero);
+        b.add(const DeleteAccount('acc-1'));
+      },
+      // Equal consecutive states are collapsed, so one emission is seen.
+      expect: () => [
+        AccountLoaded([account(name: 'Fresh')]),
+      ],
+      verify: (_) => verify(() => repo.getAccounts()).called(3),
+    );
 
     blocTest<AccountBloc, AccountState>(
       'each failed write emits AccountError',
