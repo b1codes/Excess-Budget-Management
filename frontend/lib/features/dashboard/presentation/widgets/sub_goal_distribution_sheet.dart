@@ -148,11 +148,13 @@ class _SubGoalDistributionSheetState extends State<SubGoalDistributionSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Remaining: \$${_remaining.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: _remaining < 0 ? Colors.red : Colors.green,
+                  Flexible(
+                    child: Text(
+                      'Remaining: \$${_remaining.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: _remaining < 0 ? Colors.red : Colors.green,
+                      ),
                     ),
                   ),
                   TextButton(

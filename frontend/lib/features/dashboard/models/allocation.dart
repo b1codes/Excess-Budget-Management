@@ -1,3 +1,5 @@
+import 'package:frontend/core/utils/json_parsing.dart';
+
 class Allocation {
   final String type; // "goal" or "account"
   final String id;
@@ -18,7 +20,7 @@ class Allocation {
       type: json['type'] as String,
       id: json['id'] as String,
       name: json['name'] as String,
-      amount: (json['amount'] as num).toDouble(),
+      amount: parseAmount(json['amount']),
       reason: json['reason'] as String,
     );
   }

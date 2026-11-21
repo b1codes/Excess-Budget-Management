@@ -27,6 +27,7 @@ Widget transactionCardIncome(BuildContext context) {
 Widget _transactionCard(BuildContext context, {required bool isExpense}) {
   return ComponentFrame(
     child: TransactionCard(
+      id: isExpense ? 'exp-1' : 'inc-1',
       title: context.knobs.string(
         label: 'Title',
         description: 'Leave empty to see the fallback label.',

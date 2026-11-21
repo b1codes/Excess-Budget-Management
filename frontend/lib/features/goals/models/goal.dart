@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'sub_goal.dart';
+import 'package:frontend/core/utils/json_parsing.dart';
 
 class Goal extends Equatable {
   final String id;
@@ -60,8 +61,8 @@ class Goal extends Equatable {
       // user_id is not included in the Django GoalOut schema (inferred from auth).
       userId: json['user_id'] as String? ?? '',
       name: json['name'] as String,
-      targetAmount: (json['target_amount'] as num).toDouble(),
-      currentAmount: (json['current_amount'] as num).toDouble(),
+      targetAmount: parseAmount(json['target_amount']),
+      currentAmount: parseAmount(json['current_amount']),
       targetDate: json['target_date'] != null
           ? DateTime.parse(json['target_date'] as String)
           : null,

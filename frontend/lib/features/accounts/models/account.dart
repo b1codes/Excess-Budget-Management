@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:frontend/core/utils/json_parsing.dart';
 
 class Account extends Equatable {
   final String id;
@@ -18,9 +19,10 @@ class Account extends Equatable {
   factory Account.fromJson(Map<String, dynamic> json) {
     return Account(
       id: json['id'] as String,
-      userId: json['user_id'] as String,
+      // The API infers the owner from the auth token and omits user_id.
+      userId: json['user_id'] as String? ?? '',
       name: json['name'] as String,
-      balance: (json['balance'] as num).toDouble(),
+      balance: parseAmount(json['balance']),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }

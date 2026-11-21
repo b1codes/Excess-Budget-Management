@@ -59,18 +59,20 @@ class _GoalDetailViewState extends State<GoalDetailView> {
       final goals = await _goalRepository.getGoals();
       final updatedGoal = goals.firstWhere((g) => g.id == oldGoal.id);
 
+      // The view may be gone (or showing another goal) by the time the
+      // request completes.
+      if (!mounted || _currentGoal.id != oldGoal.id) return;
       setState(() {
         _currentGoal = updatedGoal;
         _isLoading = false;
       });
       widget.onUpdate?.call();
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error refreshing: $e')));
-      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error refreshing: $e')));
     }
   }
 
@@ -238,22 +240,22 @@ class _GoalDetailViewState extends State<GoalDetailView> {
   ) async {
     setState(() => _isLoading = true);
     try {
+      // The backend rolls each allocation into the goal (and the subgoal,
+      // when sub_goal_id is set), so allocations are the only write needed.
+      // Patching subgoal amounts as well would count the money twice.
       if (distribution.isNotEmpty) {
-        for (var entry in distribution.entries) {
-          final sg = _currentGoal.subGoals.firstWhere((s) => s.id == entry.key);
-          await _goalRepository.updateSubGoalAmount(
-            sg.id,
-            sg.currentAmount + entry.value,
+        for (final entry in distribution.entries) {
+          if (entry.value <= 0) continue;
+          await _goalRepository.insertAllocation(
+            _currentGoal.id,
+            entry.value,
+            subGoalId: entry.key,
           );
         }
       } else {
-        await _goalRepository.updateGoalCurrentAmount(
-          _currentGoal.id,
-          _currentGoal.currentAmount + totalAmount,
-        );
+        await _goalRepository.insertAllocation(_currentGoal.id, totalAmount);
       }
 
-      await _goalRepository.insertAllocation(_currentGoal.id, totalAmount);
       await _refreshGoal();
 
       if (mounted) {
@@ -262,12 +264,11 @@ class _GoalDetailViewState extends State<GoalDetailView> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error funding goal: $e')));
-      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error funding goal: $e')));
     }
   }
 
@@ -365,10 +366,11 @@ class _GoalDetailViewState extends State<GoalDetailView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Line Items (Subgoals)',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Flexible(
+                        child: Text(
+                          'Line Items (Subgoals)',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
                       if (_currentGoal.accountIds.isEmpty)
@@ -561,13 +563,16 @@ class _GoalDetailViewState extends State<GoalDetailView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '\$${_currentGoal.currentAmount.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontFeatures: const [FontFeature.tabularFigures()],
+                Flexible(
+                  child: Text(
+                    '\$${_currentGoal.currentAmount.toStringAsFixed(2)}',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   'Target: \$${_currentGoal.targetAmount.toStringAsFixed(2)}',
                   style: TextStyle(

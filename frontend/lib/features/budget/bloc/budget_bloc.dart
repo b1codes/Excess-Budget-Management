@@ -102,6 +102,8 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
   final BudgetRepository repository;
   StreamSubscription<List<BudgetCategory>>? _subscription;
 
+  // Writes refetch the list right away instead of waiting up to 30 seconds
+  // for the next poll, so the change shows as soon as it's saved.
   BudgetBloc({required this.repository}) : super(BudgetInitial()) {
     on<LoadBudgets>((event, emit) async {
       emit(BudgetLoading());
@@ -133,6 +135,7 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
           colorHex: event.colorHex,
           type: event.type,
         );
+        emit(BudgetLoaded(await repository.getBudgetCategories()));
       } catch (e) {
         emit(BudgetError(e.toString()));
       }
@@ -148,6 +151,7 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
           colorHex: event.colorHex,
           type: event.type,
         );
+        emit(BudgetLoaded(await repository.getBudgetCategories()));
       } catch (e) {
         emit(BudgetError(e.toString()));
       }
@@ -156,6 +160,7 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
     on<DeleteBudgetCategory>((event, emit) async {
       try {
         await repository.deleteBudgetCategory(event.id);
+        emit(BudgetLoaded(await repository.getBudgetCategories()));
       } catch (e) {
         emit(BudgetError(e.toString()));
       }

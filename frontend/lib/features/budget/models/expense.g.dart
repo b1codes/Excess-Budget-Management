@@ -8,9 +8,9 @@ part of 'expense.dart';
 
 Expense _$ExpenseFromJson(Map<String, dynamic> json) => Expense(
   id: json['id'] as String,
-  userId: json['user_id'] as String,
+  userId: json['user_id'] as String? ?? '',
   budgetCategoryId: json['budget_category_id'] as String,
-  amount: (json['amount'] as num).toDouble(),
+  amount: parseAmount(json['amount']),
   description: json['description'] as String?,
   date: DateTime.parse(json['date'] as String),
   createdAt: DateTime.parse(json['created_at'] as String),

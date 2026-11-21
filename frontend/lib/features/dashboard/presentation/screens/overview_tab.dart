@@ -25,6 +25,17 @@ class _OverviewTabState extends State<OverviewTab> {
   final TextEditingController _amountController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Load the metrics on open. Pull-to-refresh was the only other trigger,
+    // and it isn't available with a mouse or trackpad.
+    final bloc = context.read<DashboardBloc>();
+    if (bloc.state is DashboardInitial) {
+      bloc.add(DashboardInitialDataRequested());
+    }
+  }
+
+  @override
   void dispose() {
     _amountController.dispose();
     super.dispose();
@@ -153,6 +164,9 @@ class _OverviewTabState extends State<OverviewTab> {
               ? AppBar(title: const Text('Overview'))
               : null,
           floatingActionButton: FloatingActionButton.extended(
+            // The tab shell keeps every visited tab mounted, so each tab's FAB
+            // needs its own hero tag or route transitions find duplicates.
+            heroTag: 'overview_fab',
             onPressed: () => context.go('/bulk-entry'),
             icon: const Icon(Icons.library_add),
             label: const Text('Bulk Entry'),
@@ -478,13 +492,17 @@ class _OverviewTabState extends State<OverviewTab> {
             ? 3
             : (constraints.maxWidth > 600 ? 2 : 1);
 
-        return GridView.count(
+        // A fixed row height rather than an aspect ratio: narrow cells got
+        // too short for the Goal Progress card's extra lines.
+        return GridView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 2.2,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            mainAxisExtent: 170,
+          ),
           children: [
             MetricCard(
               title: 'Net Worth',

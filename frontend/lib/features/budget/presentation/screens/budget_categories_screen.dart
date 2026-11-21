@@ -248,6 +248,9 @@ class _BudgetCategoriesScreenState extends State<BudgetCategoriesScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        // The tab shell keeps every visited tab mounted, so each tab's FAB
+        // needs its own hero tag or route transitions find duplicates.
+        heroTag: 'budget_fab',
         onPressed: () => _showCategoryForm(),
         icon: const Icon(Icons.add),
         label: const Text('Add Category'),

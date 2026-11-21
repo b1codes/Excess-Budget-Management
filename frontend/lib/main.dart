@@ -1,7 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import 'core/api/api_client.dart';
+import 'core/api/auth_token_store.dart';
 import 'core/router.dart';
 import 'core/theme/llc_theme.dart';
 import 'core/theme/mesh_backdrop.dart';
@@ -19,45 +22,73 @@ import 'features/goals/repositories/goal_repository.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  final apiClient = ApiClient(
-    onUnauthenticated: () async {
-      // AuthBloc listens to auth_state changes; the router handles redirecting to /login.
-      // No-op here; AuthCheckRequested will surface AuthUnauthenticated on next check.
-    },
-  );
-  final authService = AuthService(apiClient);
-  runApp(BudgetApp(apiClient: apiClient, authService: authService));
+  final (:apiClient, :authBloc) = bootstrap();
+  runApp(BudgetApp(apiClient: apiClient, authBloc: authBloc));
 }
 
-class BudgetApp extends StatelessWidget {
-  const BudgetApp({
-    super.key,
-    required this.apiClient,
-    required this.authService,
-  });
+/// Creates the API client and auth bloc and wires them together. [dio] and
+/// [tokenStore] let tests swap out the network and secure storage.
+({ApiClient apiClient, AuthBloc authBloc}) bootstrap({
+  Dio? dio,
+  AuthTokenStore? tokenStore,
+}) {
+  late final AuthBloc authBloc;
+  final apiClient = ApiClient(
+    dio: dio,
+    tokenStore: tokenStore,
+    // Called once the refresh token is rejected too. Signing out sends the
+    // router back to /login instead of leaving the user on screens whose
+    // requests can only fail.
+    onUnauthenticated: () async => authBloc.add(AuthLogoutRequested()),
+  );
+  authBloc = AuthBloc(authService: AuthService(apiClient))
+    ..add(AuthCheckRequested());
+  return (apiClient: apiClient, authBloc: authBloc);
+}
+
+class BudgetApp extends StatefulWidget {
+  const BudgetApp({super.key, required this.apiClient, required this.authBloc});
 
   final ApiClient apiClient;
-  final AuthService authService;
+  final AuthBloc authBloc;
+
+  @override
+  State<BudgetApp> createState() => _BudgetAppState();
+}
+
+class _BudgetAppState extends State<BudgetApp> {
+  late final GoRouter _router = createRouter(widget.authBloc);
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider.value(value: apiClient),
-        RepositoryProvider(create: (_) => AccountRepository(client: apiClient)),
-        RepositoryProvider(create: (_) => BudgetRepository(client: apiClient)),
-        RepositoryProvider(create: (_) => GoalRepository(client: apiClient)),
-        RepositoryProvider(create: (_) => ProfileRepository(client: apiClient)),
+        RepositoryProvider.value(value: widget.apiClient),
         RepositoryProvider(
-          create: (_) => SuggestionRepository(client: apiClient),
+          create: (_) => AccountRepository(client: widget.apiClient),
+        ),
+        RepositoryProvider(
+          create: (_) => BudgetRepository(client: widget.apiClient),
+        ),
+        RepositoryProvider(
+          create: (_) => GoalRepository(client: widget.apiClient),
+        ),
+        RepositoryProvider(
+          create: (_) => ProfileRepository(client: widget.apiClient),
+        ),
+        RepositoryProvider(
+          create: (_) => SuggestionRepository(client: widget.apiClient),
         ),
       ],
       child: MultiBlocProvider(
         providers: [
-          BlocProvider<AuthBloc>(
-            create: (_) =>
-                AuthBloc(authService: authService)..add(AuthCheckRequested()),
-          ),
+          BlocProvider<AuthBloc>.value(value: widget.authBloc),
           BlocProvider<AccountBloc>(
             create: (context) =>
                 AccountBloc(repository: context.read<AccountRepository>()),
@@ -80,7 +111,7 @@ class BudgetApp extends StatelessWidget {
           title: 'Excess Budget Management',
           theme: LLCTheme.light(),
           darkTheme: LLCTheme.dark(),
-          routerConfig: goRouter,
+          routerConfig: _router,
           builder: (context, child) =>
               MeshBackdrop(child: child ?? const SizedBox.shrink()),
         ),

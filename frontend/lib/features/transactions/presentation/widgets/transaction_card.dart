@@ -5,6 +5,9 @@ import '../../../../core/theme/llc_theme.dart';
 import '../../../../core/theme/refractive_glass.dart';
 
 class TransactionCard extends StatelessWidget {
+  /// The transaction's id. Keys the swipe-to-delete, so it must be unique:
+  /// two identical entries (same title, date and amount) are common.
+  final String id;
   final String title;
   final double amount;
   final DateTime date;
@@ -14,6 +17,7 @@ class TransactionCard extends StatelessWidget {
 
   const TransactionCard({
     super.key,
+    required this.id,
     required this.title,
     required this.amount,
     required this.date,
@@ -33,7 +37,7 @@ class TransactionCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Dismissible(
-        key: ValueKey(title + date.toString() + amount.toString()),
+        key: ValueKey(id),
         direction: DismissDirection.endToStart,
         onDismissed: (_) => onDelete(),
         background: Container(

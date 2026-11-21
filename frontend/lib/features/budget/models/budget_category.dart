@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:frontend/core/utils/json_parsing.dart';
 
 part 'budget_category.g.dart';
 
@@ -8,9 +9,13 @@ enum BudgetCategoryType { expense, income }
 @JsonSerializable(fieldRename: FieldRename.snake)
 class BudgetCategory extends Equatable {
   final String id;
+  // The API infers the owner from the auth token and omits user_id.
+  @JsonKey(defaultValue: '')
   final String userId;
   final String name;
+  @JsonKey(fromJson: parseAmount)
   final double limitAmount;
+  @JsonKey(fromJson: parseAmount)
   final double spentAmount;
   final int? iconCode;
   final String? colorHex;

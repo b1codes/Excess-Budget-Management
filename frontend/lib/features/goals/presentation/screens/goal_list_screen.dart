@@ -37,6 +37,7 @@ class _GoalListScreenState extends State<GoalListScreen> {
     if (!silent) setState(() => _isLoading = true);
     try {
       final goals = await _goalRepository.getGoals();
+      if (!mounted) return;
       setState(() {
         _goals = goals;
         _isLoading = false;
@@ -64,18 +65,62 @@ class _GoalListScreenState extends State<GoalListScreen> {
       isScrollControlled: true,
       builder: (context) => GoalFormSheet(
         onSave: (name, amount, type, category, targetDate, accountIds) async {
-          await _goalRepository.addGoal(
-            name,
-            amount,
-            type,
-            category: category,
-            targetDate: targetDate,
-            accountIds: accountIds,
-          );
+          // The sheet closes without waiting for this, so failures must be
+          // reported here or they'd be lost.
+          try {
+            await _goalRepository.addGoal(
+              name,
+              amount,
+              type,
+              category: category,
+              targetDate: targetDate,
+              accountIds: accountIds,
+            );
+          } catch (e) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(
+              this.context,
+            ).showSnackBar(SnackBar(content: Text('Could not add goal: $e')));
+          }
           _loadGoals();
         },
       ),
     );
+  }
+
+  /// Deleting a goal also deletes its subgoals and allocations, so ask
+  /// first, the same way the goal detail view does.
+  Future<void> _confirmDelete(Goal goal) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Goal'),
+        content: Text('Are you sure you want to delete "${goal.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Delete',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _goalRepository.deleteGoal(goal.id);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not delete goal: $e')));
+    }
+    _loadGoals();
   }
 
   @override
@@ -110,6 +155,9 @@ class _GoalListScreenState extends State<GoalListScreen> {
             : null,
       ),
       floatingActionButton: FloatingActionButton(
+        // The tab shell keeps every visited tab mounted, so each tab's FAB
+        // needs its own hero tag or route transitions find duplicates.
+        heroTag: 'goals_fab',
         onPressed: _showAddGoal,
         child: const Icon(Icons.add),
       ),
@@ -182,10 +230,7 @@ class _GoalListScreenState extends State<GoalListScreen> {
               });
             }
           },
-          onDelete: () async {
-            await _goalRepository.deleteGoal(goal.id);
-            _loadGoals();
-          },
+          onDelete: () => _confirmDelete(goal),
         );
       },
     );

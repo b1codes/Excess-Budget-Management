@@ -199,11 +199,14 @@ class _AllocationCardState extends State<AllocationCard> {
                                 color: color,
                               ),
                               const SizedBox(width: 8),
-                              Text(
-                                'Accept Suggestion',
-                                style: TextStyle(
-                                  color: color,
-                                  fontWeight: FontWeight.bold,
+                              Flexible(
+                                child: Text(
+                                  'Accept Suggestion',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: color,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
